@@ -1,28 +1,34 @@
 .PHONY: all clean
 
-CFLAGS=-g -Wall -Werror -UDEBUG
+CFLAGS=-g -Wall -Werror -UDEBUG -Iinclude
 LDLIBS=-lsqlite3 -lcrypto -lssl
+
+OBJ_DIR=obj
+SRC_DIR=src
+INC_DIR=include
+
+CLIENT_INC=api.h ui.h util.h
+CLIENT_OBJS=client.o api.o util.o ui.o
+
+SERVER_INC=util.h
+SERVER_OBJS=server.o api.o util.o worker.o
 
 all: client server
 
+# compile any object matching .o with the relevant .c and .h files
+# the -Iinclude flag in $(CFLAGS) makes gcc search include/ for the relevant .h files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	gcc $(CFLAGS) -c $< -o $@
+
+# client.o and server.o require extra headers (see the *_INC variables)
+$(OBJ_DIR)/client.o: $(SRC_DIR)/client.c $(addprefix $(INC_DIR)/, $(CLIENT_INC))
+$(OBJ_DIR)/server.o: $(SRC_DIR)/server.c $(addprefix $(INC_DIR)/, $(SERVER_INC))
+
+client: $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS))
+	gcc $^ -o client
+
+server: $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS))
+	gcc $^ -o server
+
 clean:
-	rm -f server client *.o chat.db 
-
-ui.o: ui.c ui.h
-
-client.o: client.c api.h ui.h util.h
-
-api.o: api.c api.h 
-
-server.o: server.c util.h
-
-util.o: util.c util.h
-
-worker.o: worker.c util.h worker.h
-
-client: client.o api.o ui.o util.o
-
-server: server.o api.o util.o worker.o
-
-
-
+	rm -f server client $(OBJ_DIR)/*.o chat.db 

@@ -5,16 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "api.h"
-#include "ui.h"
-#include "util.h"
-
-struct client_state {
-  struct api_state api;
-  int eof;
-  struct ui_state ui;
-  /* TODO client state variables go here */
-};
+#include "client.h"
 
 /**
  * @brief Connects to @hostname on port @port and returns the
