@@ -69,7 +69,8 @@ static void child_add(struct server_state *state, int worker_fd) {
 }
 
 static void children_check(struct server_state *state) {
-  debug_print("Checking children\n");
+    debug_print(GRN "SERVER" RESET ": children_check\n");
+
   pid_t pid;
   int status;
 
@@ -117,6 +118,7 @@ static void close_server_handles(struct server_state *state) {
 }
 
 static int handle_connection(struct server_state *state) {
+  debug_print(GRN "SERVER" RESET ": handle_connection\n");
   struct sockaddr addr;
   socklen_t addrlen = sizeof(addr);
   int connfd;
@@ -293,7 +295,7 @@ once a client connects (or really anything), it notifies
 all workers and does something idk
 */
 static int handle_incoming(struct server_state *state) {
-  debug_print("Listening for incoming things\n");
+  debug_print(GRN "\nSERVER" RESET ": handle_incoming\n");
   int fdmax, i, worker_fd, r, success = 1;
   fd_set readfds, writefds; /* practically an array of read and write file descriptors `man select` */
 
@@ -368,10 +370,9 @@ int main(int argc, char **argv) {
   /* start listening for connections */
   state.sockfd = create_server_socket(port);
   if (state.sockfd < 0) return 1;
-  debug_print("Server socket created\n");
 
   /* wait for connections */
-  debug_print("Listening for connections\n");
+  debug_print(GRN "SERVER" RESET ": main\n");
   for (;;) {
     children_check(&state);
     if (handle_incoming(&state) != 0) break;

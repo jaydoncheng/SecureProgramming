@@ -44,8 +44,8 @@ static int client_connect(struct client_state *state,
 /**
  * @brief Read input from user and handle command,
  *        returns 0 if command is handled, -1 on /exit or
- *        ui_read_stdin fails (idk where it fails)
- **/
+ *        ui_read_stdin fails (idk where it fails) 
+**/
 static int client_process_command(struct client_state *state) {
 
   assert(state);
@@ -54,8 +54,7 @@ static int client_process_command(struct client_state *state) {
    * set state->eof if there is no more input (read returns zero)
    */
 
-  if (ui_read_stdin(&state->ui) == 0)
-  {
+  if (ui_read_stdin(&state->ui) == 0) {
     debug_print("input: %s", state->ui.buf);
 
     /*
@@ -63,22 +62,19 @@ static int client_process_command(struct client_state *state) {
       debug_print("a command\n");
     }
     */
-
-    if (strncmp(state->ui.buf, "/exit", strlen("/exit")) == 0)
-    {
+    
+    if (strncmp(state->ui.buf, "/exit", strlen("/exit")) == 0) {
       printf("Exiting chat...\n");
       return -1;
     }
 
     // TODO: send command to server
-    // int r;
-    // r = send(state->api.fd, state->ui.buf, sizeof(state->ui.buf), 0);
-    // debug_print("send return code: %i\n", r);
+    int r;
+    r = send(state->api.fd, state->ui.buf, sizeof(state->ui.buf), 0);
+    debug_print("send return code: %i\n", r);
     // ^ very primitive, i think we're supposed to use api.c
     // so messages are standardized
-  }
-  else
-  {
+  } else {
     debug_print("read stdin.. no input\n");
   }
 
@@ -135,6 +131,7 @@ static int handle_server_request(struct client_state *state) {
  *
  */
 static int handle_incoming(struct client_state *state) {
+  debug_print(BLU "CLIENT" RESET ": Handle incoming event\n");
   int fdmax, r;
   fd_set readfds;
 
