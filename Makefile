@@ -17,7 +17,7 @@ all: client server
 
 # compile any object matching .o with the relevant .c and .h files
 # the -Iinclude flag in $(CFLAGS) makes gcc search include/ for the relevant .h files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c mkdir_obj
 	gcc $(CFLAGS) -c $< -o $@
 
 # client.o and server.o require extra headers (see the *_INC variables)
@@ -29,6 +29,9 @@ client: $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS))
 
 server: $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS))
 	gcc $^ -o server
+
+mkdir_obj:
+	mkdir -p $(OBJ_DIR)
 
 clean:
 	rm -f server client $(OBJ_DIR)/*.o chat.db 
