@@ -23,6 +23,7 @@ struct worker_state {
  */
 static int handle_s2w_notification(struct worker_state *state) {
   /* TODO implement the function */
+  debug_print("Worker: Got a notification from server");
   return -1;
 }
 
@@ -57,6 +58,7 @@ static int execute_request(
   struct worker_state *state,
   const struct api_msg *msg) {
 
+  debug_print("Worker received request, executed request.\n");
   /* TODO handle request and reply to client */
 
   return -1;
@@ -92,6 +94,7 @@ static int handle_client_request(struct worker_state *state) {
 }
 
 static int handle_s2w_read(struct worker_state *state) {
+  debug_print("handle_s2w_read called\n");
   char buf[256];
   ssize_t r;
 
@@ -125,6 +128,7 @@ static int handle_s2w_read(struct worker_state *state) {
  *
  */
 static int handle_incoming(struct worker_state *state) {
+  debug_print("Worker listening...\n");
   int fdmax, r, success = 1;
   fd_set readfds;
 

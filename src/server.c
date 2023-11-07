@@ -13,19 +13,7 @@
 
 #include "util.h"
 #include "worker.h"
-
-#define MAX_CHILDREN 16
-
-struct server_child_state {
-  int worker_fd;  /* server <-> worker bidirectional notification channel */
-  int pending; /* notification pending yes/no */
-};
-
-struct server_state {
-  int sockfd;
-  struct server_child_state children[MAX_CHILDREN];
-  int child_count;
-};
+#include "server.h"
 
 static int create_server_socket(uint16_t port) {
   int fd;
@@ -81,6 +69,7 @@ static void child_add(struct server_state *state, int worker_fd) {
 }
 
 static void children_check(struct server_state *state) {
+  debug_print("Checking children\n");
   pid_t pid;
   int status;
 
@@ -96,6 +85,7 @@ static void children_check(struct server_state *state) {
     }
     if (pid == 0 || pid == -1) {
       /* no children exited */
+      debug_print("  No children exited\n");
       break;
     }
 
@@ -206,11 +196,11 @@ static int handle_w2s_read(struct server_state *state, int index) {
    */
   errno = 0;
   r = read(state->children[index].worker_fd, buf, sizeof(buf));
+
   if (r < 0) {
     perror("error: read socketpair failed");
     return -1;
   }
-
   /* this means the worker closed its end of the socket pair */
   if (r == 0){
      handle_s2w_closed(state, index);
@@ -221,6 +211,7 @@ static int handle_w2s_read(struct server_state *state, int index) {
   for (i = 0; i < MAX_CHILDREN; i++) {
     state->children[i].pending = 1;
   }
+  
 
   return 0;
 }
@@ -279,6 +270,8 @@ static int server_state_init(struct server_state *state) {
     state->children[i].worker_fd = -1;
   }
 
+  debug_print("Initialized %i workers\n", MAX_CHILDREN);
+
   /* TODO any additional server state initialization */
 
   return 0;
@@ -294,12 +287,18 @@ static void server_state_free(struct server_state *state) {
   }
 }
 
+/* 
+handles incoming connections, blocks on reading the socket
+once a client connects (or really anything), it notifies
+all workers and does something idk
+*/
 static int handle_incoming(struct server_state *state) {
+  debug_print("Listening for incoming things\n");
   int fdmax, i, worker_fd, r, success = 1;
-  fd_set readfds, writefds;
+  fd_set readfds, writefds; /* practically an array of read and write file descriptors `man select` */
 
   /* list file descriptors to wait for */
-  FD_ZERO(&readfds);
+  FD_ZERO(&readfds);    // something like memset(0, &...)
   FD_ZERO(&writefds);
   /* wake on for incoming connections */
   FD_SET(state->sockfd, &readfds);
@@ -307,6 +306,7 @@ static int handle_incoming(struct server_state *state) {
   for (i = 0; i < MAX_CHILDREN; i++) {
     worker_fd = state->children[i].worker_fd;
     if (worker_fd < 0) continue;
+
     /* wake on worker-to-server notifications */
     FD_SET(worker_fd, &readfds);
     /* wake on when we can notify the worker */
@@ -328,6 +328,7 @@ static int handle_incoming(struct server_state *state) {
   if (FD_ISSET(state->sockfd, &readfds)) {
     if (handle_connection(state) != 0) success = 0;
   }
+  /* handle_connection forks, this is never reached by new processes */
 
   for (i = 0; i < MAX_CHILDREN; i++) {
   	/* handle incoming notifications */
@@ -367,11 +368,13 @@ int main(int argc, char **argv) {
   /* start listening for connections */
   state.sockfd = create_server_socket(port);
   if (state.sockfd < 0) return 1;
+  debug_print("Server socket created\n");
 
   /* wait for connections */
+  debug_print("Listening for connections\n");
   for (;;) {
-      children_check(&state);
-      if (handle_incoming(&state) != 0) break;
+    children_check(&state);
+    if (handle_incoming(&state) != 0) break;
   }
 
   /* clean up */

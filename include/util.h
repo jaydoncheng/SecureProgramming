@@ -7,4 +7,7 @@ int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 int max(int x, int y);
 int parse_port(const char *str, uint16_t *port_p);
 
+#define DEBUG 1
+#define debug_print if(DEBUG) printf 
+
 #endif /* defined(_UTIL_H_) */
