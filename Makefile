@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-CFLAGS=-g -Wall -Werror -UDEBUG -Iinclude
+CFLAGS=-g -Wall -Werror -UDEBUG -I$(INC_DIR)
 LDLIBS=-lsqlite3 -lcrypto -lssl
 
 OBJ_DIR=obj

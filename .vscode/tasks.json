@@ -1,0 +1,34 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "make all",
+            "command": "make all",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "detail": "Make all"
+        },
+        {
+            "type": "shell",
+            "label": "make clean",
+            "command": "make clean",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "detail": "Make clean"
+        },
+        {
+            "label": "Build",
+            "dependsOrder": "sequence",
+            "dependsOn": ["make clean", "make all"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
