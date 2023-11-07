@@ -20,6 +20,16 @@ void ui_state_free(struct ui_state *state) {
 void ui_state_init(struct ui_state *state) {
 
   assert(state);
+  memset(state, 0, sizeof(*state));
 
   /* TODO initialize ui_state */
+  printf("sizeof(state->buf): %li\n", sizeof(state->buf));
+}
+
+int ui_read_stdin(struct ui_state *state) {
+  if (fgets(state->buf, sizeof(state->buf), stdin) != NULL) {
+    return 0;
+  }
+
+  return 1;
 }
