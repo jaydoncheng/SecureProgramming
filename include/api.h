@@ -3,6 +3,7 @@
 
 struct api_msg {
   /* TODO add information about message */
+  char buf[256];
 };
 
 struct api_state {

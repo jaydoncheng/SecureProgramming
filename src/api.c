@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
+#include "util.h"
 #include "api.h"
 
 /**
@@ -16,8 +18,21 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   assert(msg);
 
   /* TODO receive a message and store information in *msg */
+  ssize_t r;
 
-  return -1;
+  r = read(state->fd, msg->buf, sizeof(msg->buf));
+
+  if (r < 0) {
+    debug_print("api_recv read failed\n");
+    return -1;
+  }
+
+  if (r == 0) {
+    debug_print("api_recv nothing to read\n");
+    return 0;
+  }
+
+  return 1;
 }
 
 /**

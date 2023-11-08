@@ -59,9 +59,19 @@ static int execute_request(
   const struct api_msg *msg) {
 
   debug_print(RED "WORKER" RESET ": execute_request\n");
+  
   /* TODO handle request and reply to client */
 
-  return -1;
+  int r;
+  r = send(state->api.fd, msg->buf, sizeof(msg->buf), 0);
+
+  if (r < 0) {
+    return -1;
+  }
+
+  debug_print(RED "WORKER" RESET ": sent a message from execute_request returned %i\n", r);
+
+  return -1; // <-- wtf does this have to be
 }
 
 /**
@@ -83,6 +93,7 @@ static int handle_client_request(struct worker_state *state) {
     return 0;
   }
 
+  debug_print(RED "WORKER" RESET ": received msg: %s", msg.buf);
   /* execute request */
   if (execute_request(state, &msg) != 0) {
     success = 0;

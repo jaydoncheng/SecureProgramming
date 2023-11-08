@@ -2,6 +2,7 @@
 #define _UTIL_H_
 
 #include <netinet/in.h>
+#include <stdio.h>
 
 int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 int max(int x, int y);
