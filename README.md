@@ -8,6 +8,8 @@ will add later
 - [x] Exiting the program using `/exit` → needs to handle commands, for now we can probably just check for `input == “/exit”`, later we’ll need to parse all messages according to (F14)
 - [ ] Exiting the program CTRL+D (end-of-file) (I guess both client and server)
 - [ ] Public messages (F6) → message needs to be sent from client to server, which the server then sends to all clients
+    - [x] Basic server (worker) <-> client echo
+    - [ ] Worker -> Rest of clients
 - [ ] Retaining old messages (F5, N1) → need to store messages
 README.md
 
