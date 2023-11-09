@@ -95,7 +95,7 @@ static int execute_request(
 
   debug_print(GRN "SERVER" RESET ": replied: %s", msg->buf);
 
-  return -1;
+  return 0;
 }
 
 /**

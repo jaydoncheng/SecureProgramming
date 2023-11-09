@@ -71,7 +71,8 @@ static int execute_request(
 
   debug_print(RED "WORKER" RESET ": sent a message from execute_request returned %i\n", r);
 
-  return -1; // <-- wtf does this have to be
+  return 0; // <-- wtf does this have to be
+            // turns out it has to be zero lol TODO: document return codes of functions
 }
 
 /**
