@@ -77,6 +77,8 @@ static int client_process_command(struct client_state *state) {
 
   } else {
     debug_print("read stdin.. no input\n");
+      printf("Exiting chat...\n");
+      return -1;
   }
 
   return 0;
