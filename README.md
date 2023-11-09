@@ -1,9 +1,12 @@
 # Secure Programming 2023 - Webchat
 
+## Documentation stuff
+will add later
+
 ## First assignment:
 - [ ] Handling incoming connections (B.3 in PDF)
 - [x] Exiting the program using `/exit` → needs to handle commands, for now we can probably just check for `input == “/exit”`, later we’ll need to parse all messages according to (F14)
-- [ ] - [ ] Exiting the program CTRL+D (end-of-file) (I guess both client and server)
+- [ ] Exiting the program CTRL+D (end-of-file) (I guess both client and server)
 - [ ] Public messages (F6) → message needs to be sent from client to server, which the server then sends to all clients
 - [ ] Retaining old messages (F5, N1) → need to store messages
 README.md
