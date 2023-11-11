@@ -360,7 +360,6 @@ void initDb(sqlite3 *db) {
                                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                                "sender TEXT NOT NULL,"
                                "receiver TEXT NOT NULL,"
-                               "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"
                                "content TEXT NOT NULL);";
 
   int rc = sqlite3_exec(db, msgTable, 0, 0, 0);
