@@ -355,9 +355,44 @@ static int handle_incoming(struct server_state *state) {
   return success ? 0 : -1;
 }
 
+void initDb(sqlite3 *db) {
+  const char *msgTable = "CREATE TABLE IF NOT EXISTS messages ("
+                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                               "sender TEXT NOT NULL,"
+                               "receiver TEXT NOT NULL,"
+                               "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,"
+                               "content TEXT NOT NULL);";
+
+  int rc = sqlite3_exec(db, msgTable, 0, 0, 0);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Cannot create msg table: %s\n", sqlite3_errmsg(db));
+    sqlite3_close(db);
+  }
+
+  const char *userTable = "CREATE TABLE IF NOT EXISTS users ("
+                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                               "username TEXT NOT NULL,"
+                               "password TEXT NOT NULL);";
+
+  rc = sqlite3_exec(db, userTable, 0, 0, 0);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Cannot create user table: %s\n", sqlite3_errmsg(db));
+    sqlite3_close(db);
+  }
+
+}
+
 int main(int argc, char **argv) {
   uint16_t port;
   struct server_state state;
+
+  /* check arguments */
+  if (argc != 2) usage();
+  if (parse_port(argv[1], &port) != 0) usage();
+  
+  /* opening database */
   sqlite3 *db;
   int rc = sqlite3_open("chat.db", &db);
 
@@ -366,11 +401,9 @@ int main(int argc, char **argv) {
     sqlite3_close(db);
     return 1;
   }
-  else printf("db opened\n");
+  else printf("db opened successfuly\n");
 
-  /* check arguments */
-  if (argc != 2) usage();
-  if (parse_port(argv[1], &port) != 0) usage();
+  initDb(db);
 
   /* preparations */
   server_state_init(&state);
