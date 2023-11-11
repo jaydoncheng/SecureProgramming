@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sqlite3.h>
 
 #include "util.h"
 #include "worker.h"
@@ -357,6 +358,15 @@ static int handle_incoming(struct server_state *state) {
 int main(int argc, char **argv) {
   uint16_t port;
   struct server_state state;
+  sqlite3 *db;
+  int rc = sqlite3_open("chat.db", &db);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    sqlite3_close(db);
+    return 1;
+  }
+  else printf("db opened\n");
 
   /* check arguments */
   if (argc != 2) usage();
@@ -382,6 +392,7 @@ int main(int argc, char **argv) {
   /* TODO any additional server cleanup */
   server_state_free(&state);
   close(state.sockfd);
+  sqlite3_close(db);
 
   return 0;
 }

@@ -18,17 +18,17 @@ all: client server
 # compile any object matching .o with the relevant .c and .h files
 # the -Iinclude flag in $(CFLAGS) makes gcc search include/ for the relevant .h files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c mkdir_obj
-	gcc $(CFLAGS) -c $< -o $@
+	gcc $(CFLAGS) -c $< -o $@ $(LDLIBS)
 
 # client.o and server.o require extra headers (see the *_INC variables)
 $(OBJ_DIR)/client.o: $(SRC_DIR)/client.c $(addprefix $(INC_DIR)/, $(CLIENT_INC))
 $(OBJ_DIR)/server.o: $(SRC_DIR)/server.c $(addprefix $(INC_DIR)/, $(SERVER_INC))
 
 client: $(addprefix $(OBJ_DIR)/, $(CLIENT_OBJS))
-	gcc $^ -o client
+	gcc $^ -o client $(LDLIBS)
 
 server: $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS))
-	gcc $^ -o server
+	gcc $^ -o server $(LDLIBS)
 
 mkdir_obj:
 	mkdir -p $(OBJ_DIR)
