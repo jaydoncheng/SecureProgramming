@@ -5,6 +5,7 @@
             "label": "make all",
             "command": "make all",
             "group": "build",
+            "problemMatcher": "$gcc",
             "presentation": {
                 "reveal": "silent"
             },
@@ -23,10 +24,24 @@
         {
             "label": "Build",
             "dependsOrder": "sequence",
-            "dependsOn": ["make clean", "make all"],
+            "dependsOn": [
+                "make clean",
+                "make all"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "sleep",
+            "type": "shell",
+            "command": "sleep 3",
+            "group": "none",
+            "presentation": {
+                "reveal": "silent",
+                "close": true
             }
         }
     ],

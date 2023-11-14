@@ -23,7 +23,6 @@ void ui_state_init(struct ui_state *state) {
   memset(state, 0, sizeof(*state));
 
   /* TODO initialize ui_state */
-  printf("sizeof(state->buf): %li\n", sizeof(state->buf));
 }
 
 int ui_read_stdin(struct ui_state *state) {

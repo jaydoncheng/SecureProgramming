@@ -1,3 +1,6 @@
 *.o
 /client
 /server
+/*.db
+chat.db
+*/chat.db

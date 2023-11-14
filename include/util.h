@@ -8,7 +8,11 @@ int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 int max(int x, int y);
 int parse_port(const char *str, uint16_t *port_p);
 
-#define DEBUG 1
+int get_current_time(char *buf);
+#define TIME_STR_SIZE 20
+
+
+#define DEBUG 0
 #define debug_print if(DEBUG) printf 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"

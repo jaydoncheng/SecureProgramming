@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "util.h"
 #include "api.h"
@@ -19,9 +20,10 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 
   /* TODO receive a message and store information in *msg */
   ssize_t r;
+  memset(msg->buf, 0, sizeof(msg->buf));
+  r = recv(state->fd, msg->buf, sizeof(msg->buf), 0);
 
-  r = read(state->fd, msg->buf, sizeof(msg->buf));
-
+  debug_print(CYN "API" RESET ": api_recv r: %li\n", r);
   if (r < 0) {
     debug_print("api_recv read failed\n");
     return -1;
@@ -43,6 +45,7 @@ void api_recv_free(struct api_msg *msg) {
 
   assert(msg);
 
+  memset(msg->buf, 0, sizeof(msg->buf));
   /* TODO clean up state allocated for msg */
 }
 

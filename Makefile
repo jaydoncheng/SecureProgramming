@@ -10,8 +10,8 @@ INC_DIR=include
 CLIENT_INC=api.h ui.h util.h
 CLIENT_OBJS=client.o api.o util.o ui.o
 
-SERVER_INC=util.h
-SERVER_OBJS=server.o api.o util.o worker.o
+SERVER_INC=util.h database.h
+SERVER_OBJS=server.o api.o util.o worker.o database.o
 
 all: client server
 
