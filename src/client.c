@@ -47,7 +47,7 @@ static int client_connect(struct client_state *state,
  *        ui_read_stdin fails (idk where it fails) 
 **/
 static int client_process_command(struct client_state *state) {
-
+  debug_print(BLU "CLIENT" RESET ": client_process_command\n");
   assert(state);
 
   /* TODO read and handle user command from stdin;
@@ -66,10 +66,14 @@ static int client_process_command(struct client_state *state) {
       printf("Exiting chat...\n");
       return -1;
     }
+    debug_print("ui.buf len: %li\n", strlen(state->ui.buf));
+    if (strlen(state->ui.buf) == 1) {
+      return 0;
+    }
 
     // TODO: send command to server
     int r;
-    r = send(state->api.fd, state->ui.buf, sizeof(state->ui.buf), 0);
+    r = send(state->api.fd, state->ui.buf, strlen(state->ui.buf), 0);
     // ^ very primitive, i think we're supposed to use api.c
     // so messages are standardized
     if (r < 0) {}   // TODO: error handling
@@ -96,7 +100,7 @@ static int execute_request(
   /* TODO handle request and reply to client */
 
   debug_print(GRN "SERVER" RESET ": replied: %s", msg->buf);
-
+  printf("%s", msg->buf);
   return 0;
 }
 
@@ -109,6 +113,7 @@ static int handle_server_request(struct client_state *state) {
   struct api_msg msg;
   int r, success = 1;
 
+  memset(&msg.buf, 0, sizeof(msg.buf));
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
@@ -225,7 +230,7 @@ int main(int argc, char **argv) {
   api_state_init(&state.api, fd);
 
   /* TODO any additional client initialization */
-
+  printf("Successfully connected..\n");
   /* client things */
   while (!state.eof && handle_incoming(&state) == 0);
 
