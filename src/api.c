@@ -20,16 +20,8 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 
   /* TODO receive a message and store information in *msg */
   ssize_t r;
-  char buf[256];
-
-  r = recv(state->fd, buf, sizeof(buf), 0);
-  int l = 0;
-  while (isprint(buf[l])) {
-    msg->buf[l] = buf[l];
-    l++;
-  }
-  msg->buf[l] = '\n';
-  msg->buf[l+1] = '\0';
+  memset(msg->buf, 0, sizeof(msg->buf));
+  r = recv(state->fd, msg->buf, sizeof(msg->buf), 0);
 
   debug_print(CYN "API" RESET ": api_recv r: %li\n", r);
   if (r < 0) {

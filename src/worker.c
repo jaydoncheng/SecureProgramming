@@ -5,12 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sqlite3.h>
+#include <ctype.h>
 
 #include "api.h"
 #include "util.h"
 #include "worker.h"
 #include "database.h"
-#include <time.h>
 
 struct worker_state {
   struct api_state api;
@@ -72,8 +72,17 @@ static int execute_request(
   debug_print(RED "WORKER" RESET ": execute_request\n");
   
   /* TODO handle request and reply to client */
-  
-  if (strlen(msg->buf) == 1) return 0;
+
+  char buf[256];
+  int l = 0;
+  while (isprint(msg->buf[l])) {
+    buf[l] = msg->buf[l];
+    l++;
+  }
+  buf[l] = '\n';
+  buf[l+1] = '\0';
+
+  if (strlen(buf) == 1) return 0;
 
   char timestamp[TIME_STR_SIZE];
   get_current_time(timestamp);
@@ -81,7 +90,7 @@ static int execute_request(
   strcpy(db_msg.timestamp, timestamp);
   strcpy(db_msg.sender, "User");
   strcpy(db_msg.receiver, "Null");
-  strcpy(db_msg.content, msg->buf);
+  strcpy(db_msg.content, buf);
   write_msg(&db_msg);
 
   notify_workers(state);
@@ -217,6 +226,60 @@ static int worker_state_init(
   return 0;
 }
 
+int send_chat_history(struct worker_state *state) {
+  debug_print(RED "WORKER" RESET ": send_chat_history\n");
+  sqlite3 *db;
+  char buf[512];
+  struct db_msg msg;
+  sqlite3_stmt *stmt;
+  int error = 0;
+
+  fd_set writefds;
+  FD_ZERO(&writefds);
+  FD_SET(state->api.fd, &writefds);
+  int fdmax = state->api.fd;
+
+  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+
+  const char *sel_last_msg_sql = "SELECT * FROM messages ORDER BY id ASC";
+  int rc = sqlite3_prepare_v2(db, sel_last_msg_sql, -1, &stmt, 0);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Cannot prepare statement: %s\n", sqlite3_errmsg(db));
+    close_db(db);
+    return -1;
+  }
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+    strncpy(msg.timestamp, (const char*)sqlite3_column_text(stmt, 1), sizeof(msg.timestamp));
+    strncpy(msg.sender, (const char*)sqlite3_column_text(stmt, 2), sizeof(msg.sender));
+    strncpy(msg.receiver, (const char*)sqlite3_column_text(stmt, 3), sizeof(msg.receiver));
+    strncpy(msg.content, (const char*)sqlite3_column_text(stmt, 4), sizeof(msg.content));
+    snprintf(buf, sizeof(buf), "%s %s: %s", msg.timestamp, msg.sender, msg.content);
+    debug_print(RED "WORKER" RESET ": strlen(buf)=%li\n", strlen(buf));
+
+    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
+    if (r < 0) {
+      perror("dude im sot ired");
+      return -1;
+    }
+    if (FD_ISSET(state->api.fd, &writefds)) {
+      r = send(state->api.fd, buf, strlen(buf), 0);
+    }
+    debug_print(RED "WORKER" RESET ": sent %i bytes\n", r);
+    debug_print(YEL "DB" RESET ": send_chat_history: %s\n", msg.content);
+  }
+
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return error;
+}
+
+
 /**
  * @brief Clean up struct worker_state when shutting down.
  * @param state        worker state
@@ -255,7 +318,7 @@ void worker_start(
     goto cleanup;
   }
   /* TODO any additional worker initialization */
-
+  send_chat_history(&state);
   /* handle for incoming requests */
   while (!state.eof) {
     if (handle_incoming(&state) != 0) {

@@ -44,6 +44,8 @@ int init_db() {
   return 0;
 }
 
+
+
 int read_latest_msg(struct db_msg *msg) {
   sqlite3 *db;
   if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
