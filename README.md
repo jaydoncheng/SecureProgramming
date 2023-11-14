@@ -18,8 +18,8 @@ The protocols follow the provided framework:
 2. Worker catches this in `handle_client_request`, which reads the message and forwards it to `execute_request`
 3. The message is sanitized and written to the database
 4. Worker calls `notify_workers`, which sends an empty char to Server
-5. Server catches the empty notification in `handle_w2s_read` and notifies the other workers through `handle_s2w_write`
-6. Worker handles the empty notification in `handle_s2w_read` and `handle_s2w_notification`
+5. Server catches the empty notification in [handle_w2s_read](src/server.c#L31) and notifies the other workers through [handle_s2w_write](src/server.c#L223)
+6. Worker handles the empty notification in [handle_s2w_read](src/worker.c#L134) and [handle_s2w_notification](src/worker.c#L27)
 7. Worker reads the latest message from the database and sends it to Client
 
 
