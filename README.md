@@ -23,14 +23,10 @@ The protocols follow the provided framework:
 7. Worker reads the latest message from the database and sends it to Client
 
 
-
-
-
-
 ## FIXMEs
 - send/recv buffer sizes aren't handled properly on both server and client
     - [worker.c handle_s2w_notification](src/worker.c#L36) uses a 512 byte size array
-    - [api.c api_recv](src/api.c#L24) isn't handling >256 receives properly
+    - [api.c api_recv](src/api.c#L24) handles >256 character strings properly for the client in [handle_server_request](src/client.c#L111) but not in [handle_client_request->execute_request](src/worker.c#L76)
     - [client.c client_process_command](src/client.c#L76) doesn't account for user input buffer
-    - [worker.c send_chat_history](src/worker.c#L270) sends everything at once
+
 - Server clean-up is never reached when terminating with ctrl+c [server.c main](src/server.c#L387)
