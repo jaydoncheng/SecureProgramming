@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "util.h"
 
@@ -52,5 +53,14 @@ int parse_port(const char *str, uint16_t *port_p) {
   if (value < 0 || value > 65535) return -1;
 
   *port_p = value;
+  return 0;
+}
+
+int get_current_time(char *buf) {
+  time_t timer;
+  struct tm* tm_info;
+  timer = time(NULL);
+  tm_info = localtime(&timer);
+  strftime(buf, TIME_STR_SIZE, "%Y-%m-%d %H:%M:%S", tm_info);
   return 0;
 }

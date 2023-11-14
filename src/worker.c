@@ -9,6 +9,8 @@
 #include "api.h"
 #include "util.h"
 #include "worker.h"
+#include "database.h"
+#include <time.h>
 
 struct worker_state {
   struct api_state api;
@@ -25,7 +27,15 @@ struct worker_state {
 static int handle_s2w_notification(struct worker_state *state) {
   /* TODO implement the function */
   debug_print(RED "WORKER" RESET ": handle_s2w_notification\n");
-  return -1;
+  struct db_msg db_msg;
+  read_latest_msg(&db_msg);
+  char buf[512];
+
+  snprintf(buf, sizeof(buf), "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
+  debug_print(RED "WORKER" RESET ": strlen(buf)=%li\n", strlen(buf));
+  int r = send(state->api.fd, buf, strlen(buf), 0);
+  debug_print(RED "WORKER" RESET ": sent %i bytes\n", r);
+  return 0;
 }
 
 /**
@@ -62,54 +72,23 @@ static int execute_request(
   debug_print(RED "WORKER" RESET ": execute_request\n");
   
   /* TODO handle request and reply to client */
+  
+  if (strlen(msg->buf) == 1) return 0;
 
-  int r;
-  r = send(state->api.fd, msg->buf, sizeof(msg->buf), 0);
+  char timestamp[TIME_STR_SIZE];
+  get_current_time(timestamp);
+  struct db_msg db_msg;
+  strcpy(db_msg.timestamp, timestamp);
+  strcpy(db_msg.sender, "User");
+  strcpy(db_msg.receiver, "Null");
+  strcpy(db_msg.content, msg->buf);
+  write_msg(&db_msg);
 
-  if (r < 0) {
-    return -1;
-  }
-
-  debug_print(RED "WORKER" RESET ": sent a message from execute_request returned %i\n", r);
+  notify_workers(state);
+  debug_print(RED "WORKER" RESET ": notified workers\n");
 
   return 0; // <-- wtf does this have to be
             // turns out it has to be zero lol TODO: document return codes of functions
-}
-
-void write_msg_to_db(char *msg) {
-  sqlite3 *db;
-  int rc = sqlite3_open("chat.db", &db);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-    // return 1;
-  }
-  // else printf("db opened successfuly\n");
-
-  const char *insert_message_sql = "INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?);";
-  sqlite3_stmt *stmt;
-  rc = sqlite3_prepare_v2(db, insert_message_sql, -1, &stmt, 0);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot prepare statement: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-    //return 1;
-  }
-
-  const char *sender = "user1";
-  const char *receiver = "user2";
-  sqlite3_bind_text(stmt, 1, sender, -1, SQLITE_STATIC);
-  sqlite3_bind_text(stmt, 2, receiver, -1, SQLITE_STATIC);
-  sqlite3_bind_text(stmt, 3, msg, -1, SQLITE_STATIC);
-  rc = sqlite3_step(stmt);
-
-  if (rc != SQLITE_DONE) {
-    fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
-  }
-  
-  sqlite3_finalize(stmt);
-  sqlite3_close(db);
 }
 
 /**
@@ -130,9 +109,6 @@ static int handle_client_request(struct worker_state *state) {
     state->eof = 1;
     return 0;
   }
-
-  write_msg_to_db(msg.buf);
-
 
   debug_print(RED "WORKER" RESET ": received msg: %s", msg.buf);
   /* execute request */

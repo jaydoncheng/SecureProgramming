@@ -15,6 +15,7 @@
 #include "util.h"
 #include "worker.h"
 #include "server.h"
+#include "database.h"
 
 static int create_server_socket(uint16_t port) {
   int fd;
@@ -241,6 +242,7 @@ static int handle_s2w_write(struct server_state *state, int index) {
 
 static void handle_sigchld(int signum) {
   /* do nothing */
+  fprintf(stderr, "Caught signal %i\n", signum);
 }
 
 static void register_signals(void) {
@@ -355,34 +357,6 @@ static int handle_incoming(struct server_state *state) {
   return success ? 0 : -1;
 }
 
-void initDb(sqlite3 *db) {
-  const char *msgTable = "CREATE TABLE IF NOT EXISTS messages ("
-                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                               "sender TEXT NOT NULL,"
-                               "receiver TEXT NOT NULL,"
-                               "content TEXT NOT NULL);";
-
-  int rc = sqlite3_exec(db, msgTable, 0, 0, 0);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot create msg table: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-  }
-
-  const char *userTable = "CREATE TABLE IF NOT EXISTS users ("
-                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                               "username TEXT NOT NULL,"
-                               "password TEXT NOT NULL);";
-
-  rc = sqlite3_exec(db, userTable, 0, 0, 0);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot create user table: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-  }
-
-}
-
 int main(int argc, char **argv) {
   uint16_t port;
   struct server_state state;
@@ -391,18 +365,8 @@ int main(int argc, char **argv) {
   if (argc != 2) usage();
   if (parse_port(argv[1], &port) != 0) usage();
   
-  /* opening database */
-  sqlite3 *db;
-  int rc = sqlite3_open("chat.db", &db);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-    return 1;
-  }
-  else printf("db opened successfuly\n");
-
-  initDb(db);
+  /* initializing database */
+  if (init_db() != 0) return 1;
 
   /* preparations */
   server_state_init(&state);
@@ -415,16 +379,17 @@ int main(int argc, char **argv) {
 
   /* wait for connections */
   debug_print(GRN "SERVER" RESET ": main\n");
+  printf("Listening for connections..\n");
   for (;;) {
     children_check(&state);
     if (handle_incoming(&state) != 0) break;
   }
 
+  fprintf(stderr, "Broke\n");
   /* clean up */
   /* TODO any additional server cleanup */
   server_state_free(&state);
   close(state.sockfd);
-  sqlite3_close(db);
 
   return 0;
 }
