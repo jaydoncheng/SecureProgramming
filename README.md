@@ -22,6 +22,15 @@ The protocols follow the provided framework:
 6. Worker handles the empty notification in [handle_s2w_read](src/worker.c#L134) and [handle_s2w_notification](src/worker.c#L27)
 7. Worker reads the latest message from the database and sends it to Client
 
+## Design for the use of cryptography
+
+**Message Exchange**:
+
+**Key Distribution**:
+
+**Addressing Security Requirements**: 
+
+
 
 ## FIXMEs
 - send/recv buffer sizes aren't handled properly on both server and client
