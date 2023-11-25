@@ -23,16 +23,8 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   memset(msg->buf, '\0', sizeof(msg->buf));
   r = recv(state->fd, msg->buf, sizeof(msg->buf)-1, 0);
 
-  debug_print(CYN "API" RESET ": api_recv r: %li\n", r);
-  if (r < 0) {
-    debug_print("api_recv read failed\n");
-    return -1;
-  }
-
-  if (r == 0) {
-    debug_print("api_recv nothing to read\n");
-    return 0;
-  }
+  if (r < 0) return -1;
+  if (r == 0) return 0;
 
   return 1;
 }

@@ -47,7 +47,7 @@ static int client_connect(struct client_state *state,
  *        ui_read_stdin fails (idk where it fails) 
 **/
 static int client_process_command(struct client_state *state) {
-  debug_print(BLU "CLIENT" RESET ": client_process_command\n");
+  
   assert(state);
 
   /* TODO read and handle user command from stdin;
@@ -56,23 +56,17 @@ static int client_process_command(struct client_state *state) {
 
   if (ui_read_stdin(&state->ui) == 0) {
 
-    /*
-    if (state->ui.buf[0] == '/') {
-      debug_print("a command\n");
-    }
-    */
-    
     if (strncmp(state->ui.buf, "/exit", strlen("/exit")) == 0) {
       printf("Exiting chat...\n");
       return -1;
     }
-    debug_print("ui.buf len: %li\n", strlen(state->ui.buf));
+    
     if (strlen(state->ui.buf) == 1) {
       return 0;
     }
 
     // TODO: send command to server
-    int r;
+    int r = 0;
     r = send(state->api.fd, state->ui.buf, strlen(state->ui.buf), 0);
     // ^ very primitive, i think we're supposed to use api.c
     // so messages are standardized
@@ -80,7 +74,7 @@ static int client_process_command(struct client_state *state) {
     if (r == 0) {}
 
   } else {
-    debug_print("read stdin.. no input\n");
+    
       printf("Exiting chat...\n");
       return -1;
   }
@@ -96,10 +90,10 @@ static int client_process_command(struct client_state *state) {
 static int execute_request(
   struct client_state *state,
   const struct api_msg *msg) {
-  debug_print(BLU "CLIENT" RESET ": execute_request\n");
+  
   /* TODO handle request and reply to client */
 
-  debug_print(GRN "SERVER" RESET ": replied: %s", msg->buf);
+  
   printf("%s", msg->buf);
   return 0;
 }
@@ -109,7 +103,7 @@ static int execute_request(
  * @param state   Initialized client state
  */
 static int handle_server_request(struct client_state *state) {
-  debug_print(BLU "CLIENT" RESET ": handle_server_request\n");
+  
   struct api_msg msg;
   int r, success = 1;
 
@@ -142,7 +136,7 @@ static int handle_server_request(struct client_state *state) {
  *
  */
 static int handle_incoming(struct client_state *state) {
-  debug_print(BLU "CLIENT" RESET ": handle_incoming\n");
+  
   int fdmax, r;
   fd_set readfds;
 
@@ -175,7 +169,7 @@ static int handle_incoming(struct client_state *state) {
    */
   if (FD_ISSET(state->api.fd, &readfds)) {
     r = handle_server_request(state);
-    debug_print(BLU "CLIENT" RESET ": handle_incoming: r=%i\n", r);
+    
     return r;
   }
   return 0;

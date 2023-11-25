@@ -22,9 +22,19 @@
             "detail": "Make clean"
         },
         {
+            "type": "shell",
+            "label": "killall server",
+            "command": "killall server || echo ignoring no process found",
+            "presentation": {
+                "reveal": "silent",
+            },
+            "detail": "Kill server process"
+        },
+        {
             "label": "Build",
             "dependsOrder": "sequence",
             "dependsOn": [
+                "killall server",
                 "make clean",
                 "make all"
             ],

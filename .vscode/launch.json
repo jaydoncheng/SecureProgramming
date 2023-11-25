@@ -13,9 +13,10 @@
             "program": "${workspaceRoot}/server",
             "args": ["1234"],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceRoot}",
             "environment": [],
             "externalConsole": false,
+            "postDebugTask": "killall server",
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -42,7 +43,7 @@
             "program": "${workspaceRoot}/client",
             "args": ["localhost", "1234"],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceRoot}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

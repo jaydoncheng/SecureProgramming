@@ -71,7 +71,7 @@ static void child_add(struct server_state *state, int worker_fd) {
 }
 
 static void children_check(struct server_state *state) {
-    debug_print(GRN "SERVER" RESET ": children_check\n");
+    
 
   pid_t pid;
   int status;
@@ -88,7 +88,7 @@ static void children_check(struct server_state *state) {
     }
     if (pid == 0 || pid == -1) {
       /* no children exited */
-      debug_print("  No children exited\n");
+      
       break;
     }
 
@@ -120,7 +120,7 @@ static void close_server_handles(struct server_state *state) {
 }
 
 static int handle_connection(struct server_state *state) {
-  debug_print(GRN "SERVER" RESET ": handle_connection\n");
+  
   struct sockaddr addr;
   socklen_t addrlen = sizeof(addr);
   int connfd;
@@ -275,7 +275,7 @@ static int server_state_init(struct server_state *state) {
     state->children[i].worker_fd = -1;
   }
 
-  debug_print("Initialized %i workers\n", MAX_CHILDREN);
+  
 
   /* TODO any additional server state initialization */
 
@@ -298,7 +298,7 @@ once a client connects (or really anything), it notifies
 all workers and does something idk
 */
 static int handle_incoming(struct server_state *state) {
-  debug_print(GRN "\nSERVER" RESET ": handle_incoming\n");
+  
   int fdmax, i, worker_fd, r, success = 1;
   fd_set readfds, writefds; /* practically an array of read and write file descriptors `man select` */
 
@@ -378,7 +378,7 @@ int main(int argc, char **argv) {
   if (state.sockfd < 0) return 1;
 
   /* wait for connections */
-  debug_print(GRN "SERVER" RESET ": main\n");
+  
   printf("Listening for connections..\n");
   for (;;) {
     children_check(&state);

@@ -18,6 +18,9 @@ struct db_msg {
 int open_db(sqlite3 *db);
 int init_db();
 int close_db(sqlite3 *db);
+
+int prepare_statement(sqlite3 *db, char *sql, sqlite3_stmt **stmt);
+void db_to_msg(struct db_msg *msg, sqlite3_stmt *stmt);
 int read_latest_msg(struct db_msg *msg);
 int write_msg(struct db_msg *msg);
 

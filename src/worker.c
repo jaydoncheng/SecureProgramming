@@ -26,15 +26,14 @@ struct worker_state {
  */
 static int handle_s2w_notification(struct worker_state *state) {
   /* TODO implement the function */
-  debug_print(RED "WORKER" RESET ": handle_s2w_notification\n");
+  
   struct db_msg db_msg;
   read_latest_msg(&db_msg);
   char buf[512];
 
   snprintf(buf, sizeof(buf), "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
-  debug_print(RED "WORKER" RESET ": strlen(buf)=%li\n", strlen(buf));
-  int r = send(state->api.fd, buf, strlen(buf), 0);
-  debug_print(RED "WORKER" RESET ": sent %i bytes\n", r);
+  send(state->api.fd, buf, strlen(buf), 0);
+  
   return 0;
 }
 
@@ -69,7 +68,8 @@ static int execute_request(
   struct worker_state *state,
   const struct api_msg *msg) {
 
-  debug_print(RED "WORKER" RESET ": execute_request\n");
+  struct db_msg db_msg;
+  
   
   /* TODO handle request and reply to client */
 
@@ -86,7 +86,6 @@ static int execute_request(
 
   char timestamp[TIME_STR_SIZE];
   get_current_time(timestamp);
-  struct db_msg db_msg;
   strcpy(db_msg.timestamp, timestamp);
   strcpy(db_msg.sender, "User");
   strcpy(db_msg.receiver, "Null");
@@ -94,7 +93,7 @@ static int execute_request(
   write_msg(&db_msg);
 
   notify_workers(state);
-  debug_print(RED "WORKER" RESET ": notified workers\n");
+  
 
   return 0; // <-- wtf does this have to be
             // turns out it has to be zero lol TODO: document return codes of functions
@@ -105,7 +104,7 @@ static int execute_request(
  * @param state   Initialized worker state
  */
 static int handle_client_request(struct worker_state *state) {
-  debug_print(RED "WORKER" RESET ": handle_client_request\n");
+  
   struct api_msg msg;
   int r, success = 1;
 
@@ -119,7 +118,7 @@ static int handle_client_request(struct worker_state *state) {
     return 0;
   }
 
-  debug_print(RED "WORKER" RESET ": received msg: %s", msg.buf);
+  
   /* execute request */
   if (execute_request(state, &msg) != 0) {
     success = 0;
@@ -132,7 +131,7 @@ static int handle_client_request(struct worker_state *state) {
 }
 
 static int handle_s2w_read(struct worker_state *state) {
-  debug_print(RED "WORKER" RESET ": handle_s2w_read\n");
+  
   char buf[256];
   ssize_t r;
 
@@ -166,7 +165,7 @@ static int handle_s2w_read(struct worker_state *state) {
  *
  */
 static int handle_incoming(struct worker_state *state) {
-  debug_print(RED "WORKER" RESET ": handle_incoming\n");
+  
   int fdmax, r, success = 1;
   fd_set readfds;
 
@@ -227,11 +226,11 @@ static int worker_state_init(
 }
 
 int send_chat_history(struct worker_state *state) {
-  debug_print(RED "WORKER" RESET ": send_chat_history\n");
+  
   sqlite3 *db;
   char buf[512];
   struct db_msg msg;
-  sqlite3_stmt *stmt;
+  sqlite3_stmt *stmt = NULL;
   int error = 0;
 
   fd_set writefds;
@@ -243,23 +242,12 @@ int send_chat_history(struct worker_state *state) {
     fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
     return -1;
   }
-
-  const char *sel_last_msg_sql = "SELECT * FROM messages ORDER BY id ASC";
-  int rc = sqlite3_prepare_v2(db, sel_last_msg_sql, -1, &stmt, 0);
-
-  if (rc != SQLITE_OK) {
-    fprintf(stderr, "Cannot prepare statement: %s\n", sqlite3_errmsg(db));
-    close_db(db);
-    return -1;
-  }
+  prepare_statement(db, "SELECT * FROM messages ORDER BY id ASC", &stmt);
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
-    strncpy(msg.timestamp, (const char*)sqlite3_column_text(stmt, 1), sizeof(msg.timestamp));
-    strncpy(msg.sender, (const char*)sqlite3_column_text(stmt, 2), sizeof(msg.sender));
-    strncpy(msg.receiver, (const char*)sqlite3_column_text(stmt, 3), sizeof(msg.receiver));
-    strncpy(msg.content, (const char*)sqlite3_column_text(stmt, 4), sizeof(msg.content));
+    db_to_msg(&msg, stmt);
     snprintf(buf, sizeof(buf), "%s %s: %s", msg.timestamp, msg.sender, msg.content);
-    debug_print(RED "WORKER" RESET ": strlen(buf)=%li\n", strlen(buf));
+    
 
     int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
     if (r < 0) {
@@ -269,8 +257,8 @@ int send_chat_history(struct worker_state *state) {
     if (FD_ISSET(state->api.fd, &writefds)) {
       r = send(state->api.fd, buf, strlen(buf), 0);
     }
-    debug_print(RED "WORKER" RESET ": sent %i bytes\n", r);
-    debug_print(YEL "DB" RESET ": send_chat_history: %s\n", msg.content);
+    
+    
   }
 
 
