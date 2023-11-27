@@ -29,10 +29,9 @@ static int handle_s2w_notification(struct worker_state *state) {
   
   struct db_msg db_msg;
   read_latest_msg(&db_msg);
-  char buf[512];
-
-  snprintf(buf, sizeof(buf), "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
-  send(state->api.fd, buf, strlen(buf), 0);
+  char *msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
+  sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
+  send(state->api.fd, msg, strlen(msg), 0);
   
   return 0;
 }
@@ -229,8 +228,8 @@ static int worker_state_init(
 int send_chat_history(struct worker_state *state) {
   
   sqlite3 *db;
-  char buf[512];
-  struct db_msg msg;
+  char *msg;
+  struct db_msg db_msg;
   sqlite3_stmt *stmt = NULL;
   int error = 0;
 
@@ -246,8 +245,9 @@ int send_chat_history(struct worker_state *state) {
   prepare_statement(db, "SELECT * FROM messages ORDER BY id ASC", &stmt);
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
-    db_to_msg(&msg, stmt);
-    snprintf(buf, sizeof(buf), "%s %s: %s", msg.timestamp, msg.sender, msg.content);
+    db_to_msg(&db_msg, stmt);
+    msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
+    sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
     
 
     int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
@@ -256,7 +256,8 @@ int send_chat_history(struct worker_state *state) {
       return -1;
     }
     if (FD_ISSET(state->api.fd, &writefds)) {
-      r = send(state->api.fd, buf, strlen(buf), 0);
+      r = send(state->api.fd, msg, strlen(msg), 0);
+      free(msg);
     }
     
     

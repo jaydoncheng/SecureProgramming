@@ -21,6 +21,7 @@ void ui_state_init(struct ui_state *state) {
 
   assert(state);
   memset(state, 0, sizeof(*state));
+
   state->bufsize = CLIENT_INPUT_LENGTH;
   state->buf = calloc(CLIENT_INPUT_LENGTH, sizeof(char));
 
@@ -35,7 +36,8 @@ void ui_state_init(struct ui_state *state) {
  * @returns       Returns 0 on successful read, -1 if read input size > MAX_CLIENT_INPUT
 */
 int ui_read_stdin(struct ui_state *state, int offset) {
-  fgets(state->buf + offset, state->bufsize, stdin);
+  printf("bufsize - offset: %i\n", state->bufsize - offset);
+  fgets(state->buf + offset, state->bufsize - offset, stdin);
 
   if (strlen(state->buf) == state->bufsize - 1 && state->buf[state->bufsize - 2] != '\n') {
     state->bufsize *= 2;

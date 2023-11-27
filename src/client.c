@@ -72,7 +72,6 @@ static int client_process_command(struct client_state *state) {
   // TODO: send command to server
   int r = 0;
   r = send(state->api.fd, state->ui.buf, strlen(state->ui.buf), 0);
-  printf("Sent %s\n", state->ui.buf);
   // ^ very primitive, i think we're supposed to use api.c
   // so messages are standardized
   if (r < 0) {}   // TODO: error handling

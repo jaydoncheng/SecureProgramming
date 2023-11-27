@@ -19,7 +19,8 @@
         "type_traits": "c",
         "database.h": "c",
         "cstdlib": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "api.h": "c"
     },
     "cmake.configureOnOpen": false
 }

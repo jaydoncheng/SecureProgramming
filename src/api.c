@@ -20,7 +20,6 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
   assert(state);
   assert(msg);
 
-  /* TODO receive a message and store information in *msg */
   ssize_t total = 0;
   ssize_t count = 0;
   while ((count = recv(state->fd, msg->buf + total, msg->bufsize - total, 0)) > 0) {
@@ -28,12 +27,12 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
     total += count;
     
     if (strchr(msg->buf, '\n')) break;
-    if (msg->bufsize - total == 0) { 
+    if (msg->bufsize - total == 0) {
       msg->bufsize *= 2;
-      msg->buf = realloc(msg->buf, msg->bufsize);
+      msg->buf = realloc(msg->buf, msg->bufsize * sizeof(char));
     }
   };
-  
+ 
   if (total == 0) return 0;
   return 1;
 }

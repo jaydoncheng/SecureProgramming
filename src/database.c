@@ -6,7 +6,6 @@ int close_db(sqlite3 *db) {
   return 0;
 }
 
-
 int init_db() {
   sqlite3 *db;
   if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
@@ -118,3 +117,7 @@ int write_msg(struct db_msg *msg) {
   return 0;
 }
 
+void format_db_msg(struct db_msg *msg, char *buf) {
+  buf = calloc(DB_MSG_SIZE + strlen(msg->content) + 3, sizeof(char));
+  sprintf(buf, "%s %s: %s", msg->timestamp, msg->sender, msg->content);
+}
