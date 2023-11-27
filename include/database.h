@@ -3,16 +3,20 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "sqlite3.h"
 
 #define DB_FILE "chat.db"
 
-
+/**
+ * Needs to be allocated to fit a 
+ * variable content size.
+ */
 struct db_msg {
     char timestamp[TIME_STR_SIZE];
     char sender[32];
     char receiver[32];
-    char content[256];
+    char *content;
 };
 
 int open_db(sqlite3 *db);

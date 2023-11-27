@@ -1,16 +1,20 @@
 #ifndef _API_H_
 #define _API_H_
 
+#include <stdlib.h>
+
+#define STD_MSG_LEN 128
+
 struct api_msg {
   /* TODO add information about message */
-  char buf[256];
+  char *buf;
+  int bufsize;
 };
 
 struct api_state {
   int fd;
   /* TODO add required fields */
 };
-
 
 int api_recv(struct api_state *state, struct api_msg *msg);
 void api_recv_free(struct api_msg *msg);

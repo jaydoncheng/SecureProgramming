@@ -73,7 +73,7 @@ static int execute_request(
   
   /* TODO handle request and reply to client */
 
-  char buf[256];
+  char *buf = calloc(msg->bufsize+2, sizeof(char));
   int l = 0;
   while (isprint(msg->buf[l])) {
     buf[l] = msg->buf[l];
@@ -83,6 +83,7 @@ static int execute_request(
   buf[l+1] = '\0';
 
   if (strlen(buf) == 1) return 0;
+  db_msg.content = calloc(strlen(buf), sizeof(char));
 
   char timestamp[TIME_STR_SIZE];
   get_current_time(timestamp);

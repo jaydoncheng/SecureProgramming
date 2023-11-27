@@ -14,11 +14,11 @@ int init_db() {
     return -1;
   }
   const char *msgTable = "CREATE TABLE IF NOT EXISTS messages ("
-                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                               "timestamp TEXT NOT NULL,"
-                               "sender TEXT NOT NULL,"
-                               "receiver TEXT NOT NULL,"
-                               "content TEXT NOT NULL);";
+                         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                         "timestamp TEXT NOT NULL,"
+                         "sender TEXT NOT NULL,"
+                         "receiver TEXT NOT NULL,"
+                         "content TEXT NOT NULL);";
 
   int rc = sqlite3_exec(db, msgTable, 0, 0, 0);
 
@@ -29,9 +29,9 @@ int init_db() {
   }
 
   const char *userTable = "CREATE TABLE IF NOT EXISTS users ("
-                               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                               "username TEXT NOT NULL,"
-                               "password TEXT NOT NULL);";
+                          "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                          "username TEXT NOT NULL,"
+                          "password TEXT NOT NULL);";
 
   rc = sqlite3_exec(db, userTable, 0, 0, 0);
 
@@ -58,7 +58,8 @@ void db_to_msg(struct db_msg *msg, sqlite3_stmt *stmt) {
   strncpy(msg->timestamp, (const char*)sqlite3_column_text(stmt, 1), sizeof(msg->timestamp));
   strncpy(msg->sender, (const char*)sqlite3_column_text(stmt, 2), sizeof(msg->sender));
   strncpy(msg->receiver, (const char*)sqlite3_column_text(stmt, 3), sizeof(msg->receiver));
-  strncpy(msg->content, (const char*)sqlite3_column_text(stmt, 4), sizeof(msg->content));
+  msg->content = calloc(strlen((const char *)sqlite3_column_text(stmt, 4)), sizeof(char));
+  strcpy(msg->content, (const char*)sqlite3_column_text(stmt, 4));
 }
 
 int read_latest_msg(struct db_msg *msg) {

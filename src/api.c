@@ -14,18 +14,27 @@
  *                or -1 in case of error.
  */
 int api_recv(struct api_state *state, struct api_msg *msg) {
+  msg->bufsize = STD_MSG_LEN;
+  msg->buf = calloc(STD_MSG_LEN, sizeof(char));
 
   assert(state);
   assert(msg);
 
   /* TODO receive a message and store information in *msg */
-  ssize_t r;
-  memset(msg->buf, '\0', sizeof(msg->buf));
-  r = recv(state->fd, msg->buf, sizeof(msg->buf)-1, 0);
-
-  if (r < 0) return -1;
-  if (r == 0) return 0;
-
+  ssize_t total = 0;
+  ssize_t count = 0;
+  while ((count = recv(state->fd, msg->buf + total, msg->bufsize - total, 0)) > 0) {
+    if (count < 0) return -1;
+    total += count;
+    
+    if (strchr(msg->buf, '\n')) break;
+    if (msg->bufsize - total == 0) { 
+      msg->bufsize *= 2;
+      msg->buf = realloc(msg->buf, msg->bufsize);
+    }
+  };
+  
+  if (total == 0) return 0;
   return 1;
 }
 
@@ -37,7 +46,7 @@ void api_recv_free(struct api_msg *msg) {
 
   assert(msg);
 
-  memset(msg->buf, 0, sizeof(msg->buf));
+  free(msg->buf);
   /* TODO clean up state allocated for msg */
 }
 

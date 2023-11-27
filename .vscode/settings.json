@@ -18,7 +18,8 @@
         "tuple": "c",
         "type_traits": "c",
         "database.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "string.h": "c"
     },
     "cmake.configureOnOpen": false
 }
