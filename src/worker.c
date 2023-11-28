@@ -63,25 +63,19 @@ static int notify_workers(struct worker_state *state) {
  * @param state   Initialized worker state
  * @param msg     Message to handle
  */
-static int execute_request(
-  struct worker_state *state,
-  const struct api_msg *msg) {
+static int execute_request(struct worker_state *state, const struct api_msg *api_msg) {
 
-  struct db_msg db_msg;
+  /* sanitize input */
+  char *buf = calloc(api_msg->content_size+2, sizeof(char));
+  int l;
+  for (l = 0; isprint(api_msg->content[l]); l++) 
+    buf[l] = api_msg->content[l];
   
-  
-  /* TODO handle request and reply to client */
-
-  char *buf = calloc(msg->bufsize+2, sizeof(char));
-  int l = 0;
-  while (isprint(msg->buf[l])) {
-    buf[l] = msg->buf[l];
-    l++;
-  }
   buf[l] = '\n';
   buf[l+1] = '\0';
-
   if (strlen(buf) == 1) return 0;
+  
+  struct db_msg db_msg;
   db_msg.content = calloc(strlen(buf), sizeof(char));
 
   char timestamp[TIME_STR_SIZE];

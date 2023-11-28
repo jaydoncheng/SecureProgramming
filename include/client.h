@@ -5,6 +5,8 @@
 #include "ui.h"
 #include "util.h"
 
+#define TIMEOUT_SECONDS 15
+
 struct client_state {
   struct api_state api;
   int eof;

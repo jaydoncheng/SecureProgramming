@@ -20,7 +20,9 @@
         "database.h": "c",
         "cstdlib": "c",
         "string.h": "c",
-        "api.h": "c"
+        "api.h": "c",
+        "client.h": "c"
     },
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "C_Cpp.errorSquiggles": "enabled"
 }
