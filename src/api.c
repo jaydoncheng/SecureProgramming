@@ -14,8 +14,8 @@
  *                or -1 in case of error.
  */
 int api_recv(struct api_state *state, struct api_msg *msg) {
-  msg->bufsize = STD_MSG_LEN;
-  msg->buf = calloc(STD_MSG_LEN, sizeof(char));
+  msg->bufsize = DEFAULT_MSG_LEN;
+  msg->buf = calloc(DEFAULT_MSG_LEN, sizeof(char));
 
   assert(state);
   assert(msg);

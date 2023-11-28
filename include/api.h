@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#define STD_MSG_LEN 128
+#define DEFAULT_MSG_LEN 128
 
 struct api_msg {
   /* TODO add information about message */

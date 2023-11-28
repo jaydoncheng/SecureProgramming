@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CLIENT_INPUT_LENGTH 256
+#define MAX_STDIN_LEN 4095
 
 struct ui_state {
   /* TODO add fields to store the command arguments */
