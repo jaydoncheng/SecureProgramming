@@ -9,8 +9,8 @@
 
 struct ui_state {
   /* TODO add fields to store the command arguments */
-  char *buf;
-  int bufsize;
+  char *content;
+  int content_length;
 };
 
 void ui_state_free(struct ui_state *state);
