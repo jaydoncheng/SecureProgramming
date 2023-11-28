@@ -12,15 +12,6 @@
     - [ ] an unknown command "/unknown" should give an error message
     - state variables for arguments
 
-## FIXMEs
-- send/recv buffer sizes aren't handled properly on both server and client
-    - [worker.c handle_s2w_notification](src/worker.c#L36) uses a 512 byte size array
-    - [api.c api_recv](src/api.c#L24) handles >256 character strings properly for the client in [handle_server_request](src/client.c#L111) but not in [handle_client_request->execute_request](src/worker.c#L76)
-    - [client.c client_process_command](src/client.c#L76) doesn't account for user input buffer
-
-- Server clean-up is never reached when terminating with ctrl+c [server.c main](src/server.c#L387)
-
-
 ## Security Design
 ### Messages between client and server
 * Authentication messages
