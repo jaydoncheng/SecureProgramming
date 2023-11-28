@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "util.h"
 #include "api.h"
@@ -23,9 +24,9 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 
   ssize_t total = 0; /* also an offset for where to continue writing to */
   ssize_t count = 0;
-  while ((count = recv(state->fd, msg->content + total, msg->content_size - total, 0)) > 0) {
+  while ((count = recv(state->fd, msg->content + total, msg->content_size - total, 0)) > 0) {    
     if (count < 0) {
-      perror("error: recv failed/timed out");
+      fprintf(stderr, "error: recv failed: %s\n", strerr(errno));
       return -1;
     }
 
