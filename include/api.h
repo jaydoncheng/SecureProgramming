@@ -7,8 +7,8 @@
 
 struct api_msg {
   /* TODO add information about message */
-  char *buf;
-  int bufsize;
+  char *content;
+  int content_size;
 };
 
 struct api_state {
