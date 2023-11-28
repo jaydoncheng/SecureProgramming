@@ -1,9 +1,14 @@
 #ifndef _API_H_
 #define _API_H_
 
+#include <stdlib.h>
+
+#define DEFAULT_MSG_LEN 128
+
 struct api_msg {
   /* TODO add information about message */
-  char buf[256];
+  char *content;
+  int content_size;
 };
 
 struct api_state {

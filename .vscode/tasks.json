@@ -24,7 +24,7 @@
         {
             "type": "shell",
             "label": "killall server",
-            "command": "killall server || echo ignoring no process found",
+            "command": "fuser -k 1234/tcp || echo ignoring no process found",
             "presentation": {
                 "reveal": "silent",
             },

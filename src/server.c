@@ -23,6 +23,13 @@ static int create_server_socket(uint16_t port) {
 
   /* create TCP socket */
   fd = socket(AF_INET, SOCK_STREAM, 0);
+
+  /* set timeout */
+  struct timeval tv;
+  tv.tv_sec = TIMEOUT_SECONDS;
+  tv.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+
   if (fd < 0) {
     perror("error: cannot allocate server socket");
     return -1;

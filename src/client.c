@@ -31,6 +31,10 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
+  struct timeval tv;
+  tv.tv_sec = TIMEOUT_SECONDS;
+  tv.tv_usec = 0;
+  setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
   /* connect to server */
   if (connect(fd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
     perror("error: cannot connect to server");
@@ -54,29 +58,29 @@ static int client_process_command(struct client_state *state) {
    * set state->eof if there is no more input (read returns zero)
    */
 
-  if (ui_read_stdin(&state->ui) == 0) {
+  int rc = ui_read_stdin(&state->ui, 0);
+  if (rc == -1) {
+    printf("Input exceeded limit (%i), exiting chat...\n", MAX_STDIN_LEN);
+    return -1;
+  }
 
-    if (strncmp(state->ui.buf, "/exit", strlen("/exit")) == 0) {
-      printf("Exiting chat...\n");
-      return -1;
-    }
-    
-    if (strlen(state->ui.buf) == 1) {
-      return 0;
-    }
+  if (strncmp(state->ui.content, "/exit", strlen("/exit")) == 0) {
+    printf("Exiting chat...\n");
+    return -1;
+  }
+  
+  if (strlen(state->ui.content) == 1) {
+    return 0;
+  }
 
-    // TODO: send command to server
-    int r = 0;
-    r = send(state->api.fd, state->ui.buf, strlen(state->ui.buf), 0);
-    // ^ very primitive, i think we're supposed to use api.c
-    // so messages are standardized
-    if (r < 0) {}   // TODO: error handling
-    if (r == 0) {}
-
-  } else {
-    
-      printf("Exiting chat...\n");
-      return -1;
+  // TODO: send command to server
+  int r = 0;
+  r = send(state->api.fd, state->ui.content, strlen(state->ui.content), 0);
+  // ^ very primitive, i think we're supposed to use api.c
+  // so messages are standardized
+  if (r < 0) {
+    perror("send failed");
+    return -1;
   }
 
   return 0;
@@ -94,7 +98,7 @@ static int execute_request(
   /* TODO handle request and reply to client */
 
   
-  printf("%s", msg->buf);
+  printf("%s", msg->content);
   return 0;
 }
 
@@ -107,7 +111,6 @@ static int handle_server_request(struct client_state *state) {
   struct api_msg msg;
   int r, success = 1;
 
-  memset(&msg.buf, 0, sizeof(msg.buf));
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */

@@ -2,6 +2,7 @@
 #define _SERVER_H_
 
 #define MAX_CHILDREN 16
+#define TIMEOUT_SECONDS 15
 
 struct server_child_state {
   int worker_fd;  /* server <-> worker bidirectional notification channel */
