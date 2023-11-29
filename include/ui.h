@@ -10,7 +10,7 @@
 struct ui_state {
   /* TODO add fields to store the command arguments */
   char *content;
-  int content_length;
+  int cont_buf_len;
 };
 
 void ui_state_free(struct ui_state *state);

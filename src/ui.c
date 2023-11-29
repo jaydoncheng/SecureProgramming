@@ -23,8 +23,8 @@ void ui_state_init(struct ui_state *state) {
   assert(state);
   memset(state, 0, sizeof(*state));
 
-  state->content_length = 128;
-  state->content = calloc(state->content_length, sizeof(char));
+  state->cont_buf_len = 128;
+  state->content = calloc(state->cont_buf_len, sizeof(char));
 
   /* TODO initialize ui_state */
 }
@@ -37,13 +37,13 @@ void ui_state_init(struct ui_state *state) {
  * @returns       Returns 0 on successful read, -1 if read input size > MAX_STDIN_LEN
 */
 int ui_read_stdin(struct ui_state *state, int offset) {
-  fgets(state->content + offset, state->content_length - offset, stdin);
+  fgets(state->content + offset, state->cont_buf_len - offset, stdin);
   const int nbytes_read = strlen(state->content);
   if (nbytes_read > MAX_STDIN_LEN) return -1;
 
-  if (nbytes_read == state->content_length - 1 && state->content[state->content_length - 2] != '\n') {
-    state->content_length *= 2;
-    state->content = realloc(state->content, state->content_length);
+  if (nbytes_read == state->cont_buf_len - 1 && state->content[state->cont_buf_len - 2] != '\n') {
+    state->cont_buf_len *= 2;
+    state->content = realloc(state->content, state->cont_buf_len);
     ui_read_stdin(state, nbytes_read);
   }
   return 0;

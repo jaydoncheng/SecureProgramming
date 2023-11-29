@@ -41,7 +41,6 @@ static int handle_s2w_notification(struct worker_state *state) {
  *                from the client.
  * @param state   Initialized worker state
  */
-/* TODO call this function to notify other workers through server */
 __attribute__((unused))
 static int notify_workers(struct worker_state *state) {
   char buf = 0;
@@ -66,7 +65,7 @@ static int notify_workers(struct worker_state *state) {
 static int execute_request(struct worker_state *state, const struct api_msg *api_msg) {
 
   /* sanitize input */
-  char *buf = calloc(api_msg->content_size+2, sizeof(char));
+  char *buf = calloc(api_msg->cont_buf_len+2, sizeof(char));
   int l;
   for (l = 0; isprint(api_msg->content[l]); l++) 
     buf[l] = api_msg->content[l];
@@ -75,6 +74,45 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
   buf[l+1] = '\0';
   if (strlen(buf) == 1) return 0;
   
+  if (buf[0] == '/') {
+    const char delim[] = " \n\t";
+    char *copy = calloc(strlen(buf), sizeof(char));
+    strcpy(copy, buf);
+    char *t = strtok(copy, delim);
+    
+    if (strcmp(t, "/register") == 0) {
+      char cmd_args[] = "/register <username> <password>\n";
+      char cmd_success[] = "Successfully registered user\n";
+      char cmd_fail[] = "User already exists\n";
+      char username[32];
+      char password[64];
+
+      if ((t = strtok(NULL, delim)) == NULL) goto missing_args;
+      strncpy(username, t, sizeof(username)-1);
+      if ((t = strtok(NULL, delim)) == NULL) goto missing_args;
+      strncpy(password, t, sizeof(password)-1);
+
+      printf("User wants to register with username %s and password %s\n", username, password);
+      int rc = register_user(username, password);
+      if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+      else send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+
+      goto cleanup;
+
+missing_args:
+      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+
+    } else {
+      printf("String started with /\n");
+      char msg[] = "Unknown command\n";
+      send(state->api.fd, msg, strlen(msg), 0);
+    }
+cleanup:
+    free(copy);
+    return 0;
+  }
+
+  /* store message in database */
   struct db_msg db_msg;
   db_msg.content = calloc(strlen(buf), sizeof(char));
 
@@ -88,7 +126,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
 
   notify_workers(state);
   
-
+  free(buf);
   return 0; // <-- wtf does this have to be
             // turns out it has to be zero lol TODO: document return codes of functions
 }

@@ -73,7 +73,6 @@ static int client_process_command(struct client_state *state) {
     return 0;
   }
 
-  // TODO: send command to server
   int r = 0;
   r = send(state->api.fd, state->ui.content, strlen(state->ui.content), 0);
   // ^ very primitive, i think we're supposed to use api.c
