@@ -36,7 +36,8 @@ int init_db() {
   const char *userTable = "CREATE TABLE IF NOT EXISTS users ("
                           "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                           "username TEXT NOT NULL,"
-                          "password TEXT NOT NULL);";
+                          "password TEXT NOT NULL,"
+                          "salt TEXT NOT NULL);";
 
   rc = sqlite3_exec(db, userTable, 0, 0, 0);
 
@@ -155,7 +156,7 @@ int login_user(char username[32], char password[64]) {
     return -1;
   }
   sqlite3_stmt *stmt = NULL;
-  rc = prepare_statement(db, "SELECT password FROM users WHERE username=(?)", &stmt);
+  rc = prepare_statement(db, "SELECT password, salt FROM users WHERE username=(?)", &stmt);
   if (rc == -1) return -1;
 
   sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
@@ -163,18 +164,20 @@ int login_user(char username[32], char password[64]) {
 
   if (rc == SQLITE_ROW) {
     // If a row is found, compare the stored password with the provided password
-    const char *stored_password = (const char *)sqlite3_column_text(stmt, 0);
+    const unsigned char *salt = sqlite3_column_text(stmt, 1);
+    const char *stored_hash = (const char *)sqlite3_column_text(stmt, 0);
 
-    if (strcmp(stored_password, password) == 0) {
+    unsigned char computed_hash[HASH_SIZE];
+    generate_hash(password, salt, computed_hash);
+
+    if (strcmp(stored_hash, (const char *)computed_hash) == 0) {
       // Passwords match
       printf("Login successful\n");
     } else {
       // Password does not match
       printf("Incorrect password\n");
+      return -1;
     }
-  } else if (rc == SQLITE_DONE) {
-    // the username was not found
-    fprintf(stderr, "User not found\n");
   } else {
     // An error occurred during execution
     fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
@@ -194,11 +197,17 @@ int register_user(char username[32], char password[64]) {
   if (user_exists(db, username)) return 1;
 
   sqlite3_stmt *stmt = NULL;
-  rc = prepare_statement(db, "INSERT INTO users (username, password) VALUES (?, ?)", &stmt);
+  rc = prepare_statement(db, "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", &stmt);
   if (rc == -1) return -1;
 
+  unsigned char salt[SALT_SIZE];
+  unsigned char hash[HASH_SIZE];
+  generate_salt(salt);
+  generate_hash(password, salt, hash);
+
   sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
-  sqlite3_bind_text(stmt, 2, password, -1, SQLITE_STATIC);
+  sqlite3_bind_text(stmt, 2, (const char *)hash, -1, SQLITE_STATIC);
+  sqlite3_bind_text(stmt, 3, (const char *)salt, -1, SQLITE_STATIC);
   rc = sqlite3_step(stmt);
   
   if (rc != SQLITE_DONE) {

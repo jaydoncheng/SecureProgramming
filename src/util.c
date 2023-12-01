@@ -6,6 +6,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <openssl/rand.h>
+#include <openssl/sha.h>
+#include <openssl/evp.h>
 
 #include "util.h"
 
@@ -63,4 +66,42 @@ int get_current_time(char *buf) {
   tm_info = localtime(&timer);
   strftime(buf, TIME_STR_SIZE, "%Y-%m-%d %H:%M:%S", tm_info);
   return 0;
+}
+
+void generate_salt(unsigned char *salt) {
+    if (RAND_bytes(salt, SALT_SIZE) != 1) {
+        fprintf(stderr, "Error generating random salt\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void generate_hash(const char *password, const unsigned char *salt, unsigned char *hash) {
+    EVP_MD_CTX *mdctx;
+
+    mdctx = EVP_MD_CTX_new();
+
+    if (mdctx == NULL) {
+        // Handle error
+        return;
+    }
+    if (1 != EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL)) {
+        // Handle error
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+    if (1 != EVP_DigestUpdate(mdctx, password, strlen(password))) {
+        // Handle error
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+    if (1 != EVP_DigestUpdate(mdctx, salt, SALT_SIZE)) {
+        // Handle error
+        EVP_MD_CTX_free(mdctx);
+        return;
+    }
+    if (1 != EVP_DigestFinal_ex(mdctx, hash, NULL)) {
+        // Handle error
+    }
+
+    EVP_MD_CTX_free(mdctx);
 }
