@@ -144,11 +144,53 @@ int user_exists(sqlite3 *db, char username[32]) {
   return 0;
 }
 
+int login_user(char username[32], char password[64]) {
+  int rc;
+  sqlite3 *db = NULL;
+  if (open_db(&db) != 0) {
+    return -1;
+  }
+  if (!user_exists(db, username)) return 1;
+  if (open_db(&db) != 0) {
+    return -1;
+  }
+  sqlite3_stmt *stmt = NULL;
+  rc = prepare_statement(db, "SELECT password FROM users WHERE username=(?)", &stmt);
+  if (rc == -1) return -1;
+
+  sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
+  rc = sqlite3_step(stmt);
+
+  if (rc == SQLITE_ROW) {
+    // If a row is found, compare the stored password with the provided password
+    const char *stored_password = (const char *)sqlite3_column_text(stmt, 0);
+
+    if (strcmp(stored_password, password) == 0) {
+      // Passwords match
+      printf("Login successful\n");
+    } else {
+      // Password does not match
+      printf("Incorrect password\n");
+    }
+  } else if (rc == SQLITE_DONE) {
+    // the username was not found
+    fprintf(stderr, "User not found\n");
+  } else {
+    // An error occurred during execution
+    fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
+  }
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return 0;
+}
+
 int register_user(char username[32], char password[64]) {
   int rc;
   sqlite3 *db = NULL;
-  if (open_db(&db) != 0) return -1;
-  
+  if (open_db(&db) != 0) {
+    return -1;
+  }
   if (user_exists(db, username)) return 1;
 
   sqlite3_stmt *stmt = NULL;

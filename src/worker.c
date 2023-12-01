@@ -102,6 +102,28 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
 missing_args:
       send(state->api.fd, cmd_args, strlen(cmd_args), 0);
 
+    } else if(strcmp(t, "/login") == 0){
+      char cmd_args[] = "/login <username> <password>\n";
+      char cmd_success[] = "Successfully logged in user\n";
+      char cmd_fail[] = "Logging in failed\n";
+      char username[32];
+      char password[64];
+
+      if ((t = strtok(NULL, delim)) == NULL) goto missing_args_login;
+      strncpy(username, t, sizeof(username)-1);
+      if ((t = strtok(NULL, delim)) == NULL) goto missing_args_login;
+      strncpy(password, t, sizeof(password)-1);
+
+      printf("User wants to log in with username %s and password %s\n", username, password);
+      int rc = login_user(username, password);
+      if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+      else send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+
+      goto cleanup;
+
+missing_args_login:
+      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+
     } else {
       printf("String started with /\n");
       char msg[] = "Unknown command\n";
