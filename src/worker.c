@@ -11,12 +11,14 @@
 #include "util.h"
 #include "worker.h"
 #include "database.h"
+#include "client.h"
 
 struct worker_state {
   struct api_state api;
   int eof;
   int server_fd;  /* server <-> worker bidirectional notification channel */
   int server_eof;
+  struct client_state client;
   /* TODO worker state variables go here */
 };
 
@@ -95,7 +97,11 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
       if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
-      else send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+      else {
+        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        state->client.username = strdup(username);
+        state->client.isLoggedIn = 1;
+      }
 
       goto cleanup;
 
@@ -117,8 +123,11 @@ missing_args:
       printf("User wants to log in with username %s and password %s\n", username, password);
       int rc = login_user(username, password);
       if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
-      else send(state->api.fd, cmd_success, strlen(cmd_success), 0);
-
+      else {
+        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        state->client.username = strdup(username);
+        state->client.isLoggedIn = 1;
+      }
       goto cleanup;
 
 missing_args_login:
@@ -141,7 +150,10 @@ cleanup:
   char timestamp[TIME_STR_SIZE];
   get_current_time(timestamp);
   strcpy(db_msg.timestamp, timestamp);
-  strcpy(db_msg.sender, "User");
+  if(state->client.isLoggedIn == 1) {
+    strcpy(db_msg.sender, state->client.username);
+  }
+  else strcpy(db_msg.sender, "User");
   strcpy(db_msg.receiver, "Null");
   strcpy(db_msg.content, buf);
   write_msg(&db_msg);

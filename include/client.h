@@ -11,6 +11,8 @@ struct client_state {
   struct api_state api;
   int eof;
   struct ui_state ui;
+  int isLoggedIn;
+  char *username;
   /* TODO client state variables go here */
 };
 
