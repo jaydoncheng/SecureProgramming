@@ -59,6 +59,48 @@ static int notify_workers(struct worker_state *state) {
   return 0;
 }
 
+int send_chat_history(struct worker_state *state) {
+  
+  sqlite3 *db;
+  char *msg;
+  struct db_msg db_msg;
+  sqlite3_stmt *stmt = NULL;
+  int error = 0;
+
+  fd_set writefds;
+  FD_ZERO(&writefds);
+  FD_SET(state->api.fd, &writefds);
+  int fdmax = state->api.fd;
+
+  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+  prepare_statement(db, "SELECT * FROM messages ORDER BY id ASC", &stmt);
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+    db_to_msg(&db_msg, stmt);
+    msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
+    sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
+    
+
+    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
+    if (r < 0) {
+      perror("dude im sot ired");
+      return -1;
+    }
+    if (FD_ISSET(state->api.fd, &writefds)) {
+      r = send(state->api.fd, msg, strlen(msg), 0);
+      free(msg);
+    }
+    
+  }
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return error;
+}
+
 /**
  * @brief         Handles a message coming from client
  * @param state   Initialized worker state
@@ -101,6 +143,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
         send(state->api.fd, cmd_success, strlen(cmd_success), 0);
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
+        send_chat_history(state);
       }
 
       goto cleanup;
@@ -127,6 +170,7 @@ missing_args:
         send(state->api.fd, cmd_success, strlen(cmd_success), 0);
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
+        send_chat_history(state);
       }
       goto cleanup;
 
@@ -291,51 +335,6 @@ static int worker_state_init(
   return 0;
 }
 
-int send_chat_history(struct worker_state *state) {
-  
-  sqlite3 *db;
-  char *msg;
-  struct db_msg db_msg;
-  sqlite3_stmt *stmt = NULL;
-  int error = 0;
-
-  fd_set writefds;
-  FD_ZERO(&writefds);
-  FD_SET(state->api.fd, &writefds);
-  int fdmax = state->api.fd;
-
-  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
-    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
-    return -1;
-  }
-  prepare_statement(db, "SELECT * FROM messages ORDER BY id ASC", &stmt);
-
-  while (sqlite3_step(stmt) == SQLITE_ROW) {
-    db_to_msg(&db_msg, stmt);
-    msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
-    sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
-    
-
-    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
-    if (r < 0) {
-      perror("dude im sot ired");
-      return -1;
-    }
-    if (FD_ISSET(state->api.fd, &writefds)) {
-      r = send(state->api.fd, msg, strlen(msg), 0);
-      free(msg);
-    }
-    
-    
-  }
-
-
-  sqlite3_finalize(stmt);
-  sqlite3_close(db);
-  return error;
-}
-
-
 /**
  * @brief Clean up struct worker_state when shutting down.
  * @param state        worker state
@@ -374,7 +373,7 @@ void worker_start(
     goto cleanup;
   }
   /* TODO any additional worker initialization */
-  send_chat_history(&state);
+  //send_chat_history(&state);
   /* handle for incoming requests */
   while (!state.eof) {
     if (handle_incoming(&state) != 0) {
