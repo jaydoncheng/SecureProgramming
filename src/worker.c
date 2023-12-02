@@ -125,29 +125,23 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     char username[32];
     char messageContent[256];
     // char cmd_args[] = "@<username> <message>\n";
-    // char cmd_success[] = "Successfully sent private message\n";
-    // char cmd_fail[] = "Cannot send private message\n";
+    char cmd_success[] = "Successfully sent private message\n";
+    char cmd_fail[] = "Cannot send private message - user does not exist\n";
 
     char *space_position = strstr(copy, " ");
     size_t message_length = strlen(space_position + 1);
     strncpy(messageContent, space_position + 1, message_length);
 
     char *t = strtok(copy, delim);
-
     strncpy(username, t + 1, sizeof(username) - 1);
 
     printf("Username: %s\n", username);
     printf("Message content: %s\n", messageContent);
 
-    struct db_msg db_msg;
-    db_msg.content = calloc(strlen(messageContent) + 1, sizeof(char));
-    char timestamp[TIME_STR_SIZE];
-    get_current_time(timestamp);
-    strcpy(db_msg.timestamp, timestamp);
-    strcpy(db_msg.sender, state->client.username);
-    strcpy(db_msg.receiver, username);
-    strcpy(db_msg.content, messageContent);
-    write_msg(&db_msg);
+    if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
+      send(state->api.fd, cmd_success, strlen(cmd_fail), 0);
+    }
+    else send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
 
     goto cleanup;
   }

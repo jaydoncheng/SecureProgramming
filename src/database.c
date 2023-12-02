@@ -218,3 +218,23 @@ int register_user(char username[32], char password[64]) {
   sqlite3_close(db);
   return 0;
 }
+
+int handle_prv_msg(char username[32], char rcv_username[32], char messageContent[256]) {
+  sqlite3 *db = NULL;
+  if (open_db(&db) != 0) {
+    return -1;
+  }
+  if (user_exists(db, rcv_username)) {
+    struct db_msg db_msg;
+    db_msg.content = calloc(strlen(messageContent) + 1, sizeof(char));
+    char timestamp[TIME_STR_SIZE];
+    get_current_time(timestamp);
+    strcpy(db_msg.timestamp, timestamp);
+    strcpy(db_msg.sender, username);
+    strcpy(db_msg.receiver, rcv_username);
+    strcpy(db_msg.content, messageContent);
+    write_msg(&db_msg);
+  }
+  else return 1;
+  return 0;
+}

@@ -34,4 +34,5 @@ void format_db_msg(struct db_msg *msg, char *buf);
 
 int register_user(char username[32], char password[64]); 
 int login_user(char username[32], char password[64]); 
+int handle_prv_msg(char username[32], char rcv_username[32], char messageContent[256]);
 #endif /* defined(_DATABASE_H_) */
