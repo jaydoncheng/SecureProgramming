@@ -108,6 +108,7 @@ int send_chat_history(struct worker_state *state) {
  */
 static int execute_request(struct worker_state *state, const struct api_msg *api_msg) {
 
+  char cmd_fail_log[] = "You are not logged in.\n";
   /* sanitize input */
   char *buf = calloc(api_msg->cont_buf_len+2, sizeof(char));
   int l;
@@ -119,14 +120,16 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
   if (strlen(buf) == 1) return 0;
   
   if(buf[0] == '@') {
+    // char cmd_args[] = "@<username> <message>\n";
+    char cmd_success[] = "Successfully sent private message\n";
+    char cmd_fail_rcv[] = "Cannot send private message - user does not exist\n";
+    if(state->client.isLoggedIn != 1) goto not_LoggedIn;
+
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
     strcpy(copy, buf);
     char username[32];
     char messageContent[256];
-    // char cmd_args[] = "@<username> <message>\n";
-    char cmd_success[] = "Successfully sent private message\n";
-    char cmd_fail[] = "Cannot send private message - user does not exist\n";
 
     char *space_position = strstr(copy, " ");
     size_t message_length = strlen(space_position + 1);
@@ -139,14 +142,14 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     printf("Message content: %s\n", messageContent);
 
     if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
-      send(state->api.fd, cmd_success, strlen(cmd_fail), 0);
+      send(state->api.fd, cmd_success, strlen(cmd_success), 0);
     }
-    else send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+    else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
 
     goto cleanup;
-  }
-
-  if (buf[0] == '/') {
+  } 
+  
+  else if (buf[0] == '/') {
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
     strcpy(copy, buf);
@@ -214,21 +217,22 @@ cleanup:
     free(copy);
     return 0;
   }
+  else {
+    /* store public message in database */
+    if(state->client.isLoggedIn != 1) goto not_LoggedIn;
+    struct db_msg db_msg;
+    db_msg.content = calloc(strlen(buf), sizeof(char));
 
-  /* store message in database */
-  struct db_msg db_msg;
-  db_msg.content = calloc(strlen(buf), sizeof(char));
-
-  char timestamp[TIME_STR_SIZE];
-  get_current_time(timestamp);
-  strcpy(db_msg.timestamp, timestamp);
-  if(state->client.isLoggedIn == 1) {
+    char timestamp[TIME_STR_SIZE];
+    get_current_time(timestamp);
+    strcpy(db_msg.timestamp, timestamp);
     strcpy(db_msg.sender, state->client.username);
+    strcpy(db_msg.receiver, "Null");
+    strcpy(db_msg.content, buf);
+    write_msg(&db_msg);
   }
-  else strcpy(db_msg.sender, "User");
-  strcpy(db_msg.receiver, "Null");
-  strcpy(db_msg.content, buf);
-  write_msg(&db_msg);
+not_LoggedIn:
+  send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
 
   notify_workers(state);
   
