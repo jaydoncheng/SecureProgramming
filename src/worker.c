@@ -76,7 +76,18 @@ int send_chat_history(struct worker_state *state) {
     fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
     return -1;
   }
-  prepare_statement(db, "SELECT * FROM messages ORDER BY id ASC", &stmt);
+
+  char *query = "SELECT * FROM messages WHERE "
+                      "(receiver = 'Null') OR "
+                      "(sender = @username AND receiver <> 'Null') OR "
+                      "(receiver = @username) "
+                      "ORDER BY id ASC";
+
+  prepare_statement(db, query, &stmt);
+
+  int usernameIndex = sqlite3_bind_parameter_index(stmt, "@username");
+  sqlite3_bind_text(stmt, usernameIndex, state->client.username, -1, SQLITE_STATIC);
+
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
     db_to_msg(&db_msg, stmt);
