@@ -14,6 +14,13 @@ int max(int x, int y);
 int parse_port(const char *str, uint16_t *port_p);
 void generate_salt(unsigned char *salt);
 void generate_hash(const char *password, const unsigned char *salt, unsigned char *hash);
+EVP_PKEY *rsa_read_pubkey_from_file(const char *path)
+size_t rsa_encrypt(EVP_PKEY *pubkey, unsigned char *plaintext_in, size_t plaintext_len, unsigned char **ciphertext_out);
+EVP_PKEY *rsa_read_privkey_from_file(const char *path)
+size_t rsa_decrypt(EVP_PKEY *privkey, unsigned char *ciphertext_in, size_t ciphertext_len, unsigned char **plaintext_out);
+RSA* generate_rsa_key_pair(int bits);
+EVP_PKEY* extract_public_key(RSA* rsa_key);
+EVP_PKEY* extract_private_key(RSA* rsa_key);
 
 int get_current_time(char *buf);
 #define TIME_STR_SIZE 20
