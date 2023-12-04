@@ -4,3 +4,5 @@
 /*.db
 chat.db
 */chat.db
+/test-tmp
+/test/__pycache__
