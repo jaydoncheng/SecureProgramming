@@ -34,12 +34,12 @@ void ui_state_init(struct ui_state *state) {
  *                from stdin. Additional size checking
  *                is done by the server.
  * @param state   UI state to write input to
- * @returns       Returns 0 on successful read, -1 if read input size > MAX_STDIN_LEN
+ * @returns       Returns 0 on successful read, -1 on EOF, -2, if read input size > MAX_STDIN_LEN
 */
 int ui_read_stdin(struct ui_state *state, int offset) {
-  fgets(state->content + offset, state->cont_buf_len - offset, stdin);
+  if (fgets(state->content + offset, state->cont_buf_len - offset, stdin) == NULL) return -1;
   const int nbytes_read = strlen(state->content);
-  if (nbytes_read > MAX_STDIN_LEN) return -1;
+  if (nbytes_read > MAX_STDIN_LEN) return -2;
 
   if (nbytes_read == state->cont_buf_len - 1 && state->content[state->cont_buf_len - 2] != '\n') {
     state->cont_buf_len *= 2;

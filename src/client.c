@@ -59,8 +59,8 @@ static int client_process_command(struct client_state *state) {
    */
 
   int rc = ui_read_stdin(&state->ui, 0);
-  if (rc == -1) {
-    printf("Input exceeded limit (%i), exiting chat...\n", MAX_STDIN_LEN);
+  if (rc < 0) {
+    printf("err %i, exiting chat...\n", rc);
     return -1;
   }
 

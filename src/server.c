@@ -249,7 +249,6 @@ static int handle_s2w_write(struct server_state *state, int index) {
 
 static void handle_sigchld(int signum) {
   /* do nothing */
-  fprintf(stderr, "Caught signal %i\n", signum);
 }
 
 static void register_signals(void) {

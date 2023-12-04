@@ -426,7 +426,6 @@ void worker_start(
   }
 
 cleanup:
-  printf("This is reached when client dcs\n");
   /* cleanup worker */
   /* TODO any additional worker cleanup */
   worker_state_free(&state);
