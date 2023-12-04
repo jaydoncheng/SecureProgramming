@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
+#include <openssl/decoder.h>
+#include <openssl/rsa.h>
+
 
 int lookup_host_ipv4(const char *hostname, struct in_addr *addr);
 int max(int x, int y);
