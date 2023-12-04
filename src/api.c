@@ -16,26 +16,27 @@
  *                or -1 in case of error.
  */
 int api_recv(struct api_state *state, struct api_msg *msg) {
-  msg->content_size = DEFAULT_MSG_LEN;
+  assert(msg);
+  assert(state);
+
+  msg->cont_buf_len = DEFAULT_MSG_LEN;
   msg->content = calloc(DEFAULT_MSG_LEN, sizeof(char));
 
-  assert(state);
-  assert(msg);
 
   ssize_t total = 0; /* also an offset for where to continue writing to */
   ssize_t count = 0;
-  while ((count = recv(state->fd, msg->content + total, msg->content_size - total, 0)) > 0) {    
+  while ((count = recv(state->fd, msg->content + total, msg->cont_buf_len - total, 0)) > 0) {    
     if (count < 0) {
-      fprintf(stderr, "error: recv failed: %s\n", strerr(errno));
+      fprintf(stderr, "error: recv failed: %s\n", strerror(errno));
       return -1;
     }
 
     total += count;
     
     if (strchr(msg->content, '\n')) break; /* comment this to test timeouts */
-    if (msg->content_size - total == 0) {
-      msg->content_size *= 2;
-      msg->content = realloc(msg->content, msg->content_size * sizeof(char));
+    if (msg->cont_buf_len - total == 0) {
+      msg->cont_buf_len *= 2;
+      msg->content = realloc(msg->content, msg->cont_buf_len * sizeof(char));
     }
   };
  

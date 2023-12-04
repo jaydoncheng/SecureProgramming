@@ -73,7 +73,6 @@ static int client_process_command(struct client_state *state) {
     return 0;
   }
 
-  // TODO: send command to server
   int r = 0;
   r = send(state->api.fd, state->ui.content, strlen(state->ui.content), 0);
   // ^ very primitive, i think we're supposed to use api.c
@@ -227,7 +226,7 @@ int main(int argc, char **argv) {
   api_state_init(&state.api, fd);
 
   /* TODO any additional client initialization */
-  printf("Successfully connected..\n");
+  printf("Successfully connected..\nto register -> /register <username> <password>\nto log in -> /login <username> <password>\n");
   /* client things */
   while (!state.eof && handle_incoming(&state) == 0);
 
