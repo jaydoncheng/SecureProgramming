@@ -138,7 +138,10 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     char *t = strtok(copy, delim);
     
     if (strcmp(t, "/register") == 0) {
-      if(state->client.isLoggedIn == 1) goto command_unavailable;
+      if(state->client.isLoggedIn == 1) {
+        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        goto cleanup;
+      }
       char cmd_args[] = "error: invalid command format\n";
       char cmd_success[] = "registration succeeded\n";
       char cmd_fail[64];
@@ -149,6 +152,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       strncpy(username, t, sizeof(username)-1);
       if ((t = strtok(NULL, delim)) == NULL) goto missing_args;
       strncpy(password, t, sizeof(password)-1);
+      if ((t = strtok(NULL, delim)) != NULL) goto missing_args;
 
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
@@ -169,7 +173,10 @@ missing_args:
       send(state->api.fd, cmd_args, strlen(cmd_args), 0);
 
     } else if(strcmp(t, "/login") == 0){
-      if(state->client.isLoggedIn == 1) goto command_unavailable;
+      if(state->client.isLoggedIn == 1) {
+        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        goto cleanup;
+      }
       char cmd_args[] = "error: invalid command format\n";
       char cmd_success[] = "authentication succeeded\n";
       char cmd_fail[] = "error: invalid credentials\n";
@@ -180,6 +187,7 @@ missing_args:
       strncpy(username, t, sizeof(username)-1);
       if ((t = strtok(NULL, delim)) == NULL) goto missing_args_login;
       strncpy(password, t, sizeof(password)-1);
+      if ((t = strtok(NULL, delim)) != NULL) goto missing_args_login;
 
       printf("User wants to log in with username %s and password %s\n", username, password);
       int rc = login_user(username, password);
@@ -201,8 +209,6 @@ missing_args_login:
       sprintf(cmd_msg, "error: unknown command %s\n", t);
       send(state->api.fd, cmd_msg, strlen(cmd_msg), 0);
     }
-command_unavailable:
-    send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
 cleanup:
     free(copy);
     return 0;

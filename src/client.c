@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
   api_state_init(&state.api, fd);
 
   /* TODO any additional client initialization */
-  printf("Successfully connected..\nto register -> /register <username> <password>\nto log in -> /login <username> <password>\n");
+  printf("to register -> /register <username> <password>\nto log in -> /login <username> <password>\n");
   /* client things */
   while (!state.eof && handle_incoming(&state) == 0);
 
