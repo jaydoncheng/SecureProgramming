@@ -138,8 +138,8 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     
     if (strcmp(t, "/register") == 0) {
       char cmd_args[] = "/register <username> <password>\n";
-      char cmd_success[] = "Successfully registered user\n";
-      char cmd_fail[] = "User already exists\n";
+      char cmd_success[] = "registration succeeded\n";
+      char cmd_fail[] = "error: user %s already exists\n", ;
       char username[32];
       char password[64];
 
@@ -165,8 +165,8 @@ missing_args:
 
     } else if(strcmp(t, "/login") == 0){
       char cmd_args[] = "/login <username> <password>\n";
-      char cmd_success[] = "Successfully logged in user\n";
-      char cmd_fail[] = "Logging in failed\n";
+      char cmd_success[] = "authentication succeeded\n";
+      char cmd_fail[] = "error: invalid credentials\n";
       char username[32];
       char password[64];
 
@@ -209,7 +209,7 @@ cleanup:
   if(buf[0] == '@') {
     // char cmd_args[] = "@<username> <message>\n";
     char cmd_success[] = "Successfully sent private message\n";
-    char cmd_fail_rcv[] = "Cannot send private message - user does not exist\n";
+    char cmd_fail_rcv[] = "error: user not found\n";
 
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
