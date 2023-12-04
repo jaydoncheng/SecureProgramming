@@ -130,37 +130,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
   buf[l+1] = '\0';
   if (strlen(buf) == 1) return 0;
   
-  if(buf[0] == '@') {
-    // char cmd_args[] = "@<username> <message>\n";
-    char cmd_success[] = "Successfully sent private message\n";
-    char cmd_fail_rcv[] = "Cannot send private message - user does not exist\n";
-    if(state->client.isLoggedIn != 1) goto not_LoggedIn;
-
-    const char delim[] = " \n\t";
-    char *copy = calloc(strlen(buf), sizeof(char));
-    strcpy(copy, buf);
-    char username[32];
-    char messageContent[256];
-
-    char *space_position = strstr(copy, " ");
-    size_t message_length = strlen(space_position + 1);
-    strncpy(messageContent, space_position + 1, message_length);
-
-    char *t = strtok(copy, delim);
-    strncpy(username, t + 1, sizeof(username) - 1);
-
-    printf("Username: %s\n", username);
-    printf("Message content: %s\n", messageContent);
-
-    if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
-      send(state->api.fd, cmd_success, strlen(cmd_success), 0);
-    }
-    else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
-
-    goto cleanup;
-  } 
-  
-  else if (buf[0] == '/') {
+  if (buf[0] == '/') {
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
     strcpy(copy, buf);
@@ -228,9 +198,41 @@ cleanup:
     free(copy);
     return 0;
   }
-  else {
-    /* store public message in database */
-    if(state->client.isLoggedIn != 1) goto not_LoggedIn;
+  
+  /* store public message in database */
+  if(state->client.isLoggedIn != 1) {
+    send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+    free(buf);
+    return 0;
+  }
+
+  if(buf[0] == '@') {
+    // char cmd_args[] = "@<username> <message>\n";
+    char cmd_success[] = "Successfully sent private message\n";
+    char cmd_fail_rcv[] = "Cannot send private message - user does not exist\n";
+
+    const char delim[] = " \n\t";
+    char *copy = calloc(strlen(buf), sizeof(char));
+    strcpy(copy, buf);
+    char username[32];
+    char messageContent[256];
+
+    char *space_position = strstr(copy, " ");
+    size_t message_length = strlen(space_position + 1);
+    strncpy(messageContent, space_position + 1, message_length);
+
+    char *t = strtok(copy, delim);
+    strncpy(username, t + 1, sizeof(username) - 1);
+
+    printf("Username: %s\n", username);
+    printf("Message content: %s\n", messageContent);
+
+    if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
+      send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+    }
+    else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
+
+  } else {
     struct db_msg db_msg;
     db_msg.content = calloc(strlen(buf), sizeof(char));
 
@@ -241,12 +243,10 @@ cleanup:
     strcpy(db_msg.receiver, "Null");
     strcpy(db_msg.content, buf);
     write_msg(&db_msg);
+    notify_workers(state);
   }
-not_LoggedIn:
-  send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
 
-  notify_workers(state);
-  
+
   free(buf);
   return 0; // <-- wtf does this have to be
             // turns out it has to be zero lol TODO: document return codes of functions
@@ -426,6 +426,7 @@ void worker_start(
   }
 
 cleanup:
+  printf("This is reached when client dcs\n");
   /* cleanup worker */
   /* TODO any additional worker cleanup */
   worker_state_free(&state);
