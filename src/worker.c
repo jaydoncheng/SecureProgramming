@@ -119,7 +119,8 @@ int send_chat_history(struct worker_state *state) {
  */
 static int execute_request(struct worker_state *state, const struct api_msg *api_msg) {
 
-  char cmd_fail_log[] = "You are not logged in.\n";
+  char cmd_fail_log[] = "error: command not currently available\n";
+
   /* sanitize input */
   char *buf = calloc(api_msg->cont_buf_len+2, sizeof(char));
   int l;
@@ -137,9 +138,10 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     char *t = strtok(copy, delim);
     
     if (strcmp(t, "/register") == 0) {
-      char cmd_args[] = "/register <username> <password>\n";
+      if(state->client.isLoggedIn == 1) goto command_unavailable;
+      char cmd_args[] = "error: invalid command format\n";
       char cmd_success[] = "registration succeeded\n";
-      char cmd_fail[] = "error: user %s already exists\n", ;
+      char cmd_fail[64];
       char username[32];
       char password[64];
 
@@ -150,7 +152,10 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
 
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
-      if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+      if (rc) {
+        sprintf(cmd_fail, "error: user %s already exists\n", username);
+        send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+        }
       else {
         send(state->api.fd, cmd_success, strlen(cmd_success), 0);
         state->client.username = strdup(username);
@@ -164,7 +169,8 @@ missing_args:
       send(state->api.fd, cmd_args, strlen(cmd_args), 0);
 
     } else if(strcmp(t, "/login") == 0){
-      char cmd_args[] = "/login <username> <password>\n";
+      if(state->client.isLoggedIn == 1) goto command_unavailable;
+      char cmd_args[] = "error: invalid command format\n";
       char cmd_success[] = "authentication succeeded\n";
       char cmd_fail[] = "error: invalid credentials\n";
       char username[32];
@@ -191,9 +197,12 @@ missing_args_login:
 
     } else {
       printf("String started with /\n");
-      char msg[] = "Unknown command\n";
-      send(state->api.fd, msg, strlen(msg), 0);
+      char cmd_msg[64];
+      sprintf(cmd_msg, "error: unknown command %s\n", t);
+      send(state->api.fd, cmd_msg, strlen(cmd_msg), 0);
     }
+command_unavailable:
+    send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
 cleanup:
     free(copy);
     return 0;
