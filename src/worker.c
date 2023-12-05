@@ -120,113 +120,110 @@ int send_chat_history(struct worker_state *state) {
 static int execute_request(struct worker_state *state, const struct api_msg *api_msg) {
 
   char cmd_fail_log[] = "error: command not currently available\n";
+  char cmd_fail_rcv_not_found[] = "error: user not found\n";
+  char cmd_reg_success[] = "registration succeeded\n";
+  char cmd_invalid_format[] = "error: invalid command format\n";
+  char cmd_invalid_cred[] = "error: invalid credentials\n";
+  char cmd_auth_suc[] = "authentication succeeded\n";
+  char cmd_user_alr_exst[64];
+  char cmd_unknown_com[64];
+  const char delim[] = " \n\t";
 
   /* sanitize input */
   char *buf = calloc(api_msg->cont_buf_len+2, sizeof(char));
   int l;
   for (l = 0; isprint(api_msg->content[l]); l++) 
     buf[l] = api_msg->content[l];
-  
+
   buf[l] = '\n';
   buf[l+1] = '\0';
+  
   if (strlen(buf) == 1) return 0;
-
   char *newBuf = removeLeadingWhitespace(buf);
   
   if (newBuf[0] == '/') {
-    const char delim[] = " \n\t";
     char *copy = calloc(strlen(newBuf), sizeof(char));
     strcpy(copy, newBuf);
     char *t = strtok(copy, delim);
     
     if (strcmp(t, "/register") == 0) {
+      char username[32];
+      char password[64];
+
       if(state->client.isLoggedIn == 1) {
         send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
         goto cleanup;
       }
-      char cmd_args[] = "error: invalid command format\n";
-      char cmd_success[] = "registration succeeded\n";
-      char cmd_fail[64];
-      char username[32];
-      char password[64];
 
-      if ((t = strtok(NULL, delim)) == NULL) goto missing_args;
+      if ((t = strtok(NULL, delim)) == NULL) goto invalid_format;
       strncpy(username, t, sizeof(username)-1);
-      if ((t = strtok(NULL, delim)) == NULL) goto missing_args;
+      if ((t = strtok(NULL, delim)) == NULL) goto invalid_format;
       strncpy(password, t, sizeof(password)-1);
-      if ((t = strtok(NULL, delim)) != NULL) goto missing_args;
+      if ((t = strtok(NULL, delim)) != NULL) goto invalid_format;
 
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
       if (rc) {
-        sprintf(cmd_fail, "error: user %s already exists\n", username);
-        send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+        sprintf(cmd_user_alr_exst, "error: user %s already exists\n", username);
+        send(state->api.fd, cmd_user_alr_exst, strlen(cmd_user_alr_exst), 0);
         }
       else {
-        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        send(state->api.fd, cmd_reg_success, strlen(cmd_reg_success), 0);
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
       }
 
       goto cleanup;
-
-missing_args:
-      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
 
     } else if(strcmp(t, "/login") == 0){
       if(state->client.isLoggedIn == 1) {
         send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
         goto cleanup;
       }
-      char cmd_args[] = "error: invalid command format\n";
-      char cmd_success[] = "authentication succeeded\n";
-      char cmd_fail[] = "error: invalid credentials\n";
       char username[32];
       char password[64];
 
-      if ((t = strtok(NULL, delim)) == NULL) goto missing_args_login;
+      if ((t = strtok(NULL, delim)) == NULL) goto invalid_format;
       strncpy(username, t, sizeof(username)-1);
-      if ((t = strtok(NULL, delim)) == NULL) goto missing_args_login;
+      if ((t = strtok(NULL, delim)) == NULL) goto invalid_format;
       strncpy(password, t, sizeof(password)-1);
-      if ((t = strtok(NULL, delim)) != NULL) goto missing_args_login;
+      if ((t = strtok(NULL, delim)) != NULL) goto invalid_format;
 
       printf("User wants to log in with username %s and password %s\n", username, password);
       int rc = login_user(username, password);
-      if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+      if (rc) send(state->api.fd, cmd_invalid_cred, strlen(cmd_invalid_cred), 0);
       else {
-        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        send(state->api.fd, cmd_auth_suc, strlen(cmd_auth_suc), 0);
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
       }
       goto cleanup;
 
-missing_args_login:
-      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
-
     } else if(strcmp(t, "/users") == 0) {
-      char cmd_args[] = "error: invalid command format\n";
       if(state->client.isLoggedIn != 1) {
         send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
         goto cleanup;
       }
       if ((t = strtok(NULL, delim)) != NULL) {
-        send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+        send(state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format), 0);
         goto cleanup;
       }
       print_users(state->api.fd);
+      
     } else {
-      char cmd_msg[64];
-      sprintf(cmd_msg, "error: unknown command %s\n", t);
-      send(state->api.fd, cmd_msg, strlen(cmd_msg), 0);
+      sprintf(cmd_unknown_com, "error: unknown command %s\n", t);
+      send(state->api.fd, cmd_unknown_com, strlen(cmd_unknown_com), 0);
     }
+invalid_format:
+    send(state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format), 0);
 cleanup:
     free(copy);
     return 0;
   }
   
-  /* store public message in database */
+  /* store messages in database */
   if(state->client.isLoggedIn != 1) {
     send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
     free(buf);
@@ -235,15 +232,11 @@ cleanup:
   }
 
   if(newBuf[0] == '@') {
-    char cmd_fail_rcv[] = "error: user not found\n";
-
-    const char delim[] = " \n\t";
     char *copy = calloc(strlen(newBuf), sizeof(char));
     strcpy(copy, newBuf);
     char *username = NULL;
 
     char *t = strtok(copy, delim);
-    //strncpy(username, t + 1, sizeof(username) - 1);
     username = strdup(t + 1);
 
     printf("Username: %s\n", username);
@@ -262,7 +255,7 @@ cleanup:
       free(finalMsg);
       notify_workers(state);
     } else {
-      send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
+      send(state->api.fd, cmd_fail_rcv_not_found, strlen(cmd_fail_rcv_not_found), 0);
     }
     free(copy);
   } else {
