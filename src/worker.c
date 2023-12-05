@@ -165,20 +165,17 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
       if (rc) {
-        sprintf(cmd_fail, "error: user %s already exists\n", username);
-        api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
+        sprintf(cmd_user_alr_exst, "error: user %s already exists\n", username);
+        api_send(state->ssl, state->api.fd, cmd_user_alr_exst, strlen(cmd_user_alr_exst));
         }
       else {
-        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
+        api_send(state->ssl, state->api.fd, cmd_reg_success, strlen(cmd_reg_success));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
       }
 
       goto cleanup;
-
-missing_args:
-      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
     } else if(strcmp(t, "/login") == 0){
       if(state->client.isLoggedIn == 1) {
@@ -197,36 +194,33 @@ missing_args:
       printf("User wants to log in with username %s and password %s\n", username, password);
       
       int rc = login_user(username, password);
-      if (rc) api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
+      if (rc) api_send(state->ssl, state->api.fd, cmd_invalid_cred, strlen(cmd_invalid_cred));
       else {
-        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
+        api_send(state->ssl, state->api.fd, cmd_auth_suc, strlen(cmd_auth_suc));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
       }
       goto cleanup;
 
-missing_args_login:
-      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
     } else if(strcmp(t, "/users") == 0) {
       if(state->client.isLoggedIn != 1) {
-        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
         goto cleanup;
       }
       if ((t = strtok(NULL, delim)) != NULL) {
-        send(state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format), 0);
+        api_send(state->ssl, state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format));
         goto cleanup;
       }
       print_users(state->api.fd);
       
     } else {
-      char cmd_msg[64];
-      sprintf(cmd_msg, "error: unknown command %s\n", t);
-      api_send(state->ssl, state->api.fd, cmd_msg, strlen(cmd_msg));
+      sprintf(cmd_unknown_com, "error: unknown command %s\n", t);
+      api_send(state->ssl, state->api.fd, cmd_unknown_com, strlen(cmd_unknown_com));
     }
 invalid_format:
-    send(state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format), 0);
+    api_send(state->ssl, state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format));
 cleanup:
     free(copy);
     return 0;
@@ -264,7 +258,7 @@ cleanup:
       free(finalMsg);
       notify_workers(state);
     } else {
-      api_send(state->ssl, state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv));
+      api_send(state->ssl, state->api.fd, cmd_fail_rcv_not_found, strlen(cmd_fail_rcv_not_found));
     }
     free(copy);
   } else {
