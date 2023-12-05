@@ -4,8 +4,15 @@
 #include "api.h"
 #include "ui.h"
 #include "util.h"
+#include "ssl-nonblock.h"
 
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+
+#define CA_CERT "clientkeys/ca-cert.pem"
 #define TIMEOUT_SECONDS 15
+#define SERVER "server.self.com"
 
 struct client_state {
   struct api_state api;
@@ -13,7 +20,9 @@ struct client_state {
   struct ui_state ui;
   int isLoggedIn;
   char *username;
-  /* TODO client state variables go here */
+
+  SSL_CTX *ssl_ctx;
+  SSL *ssl;
 };
 
 #endif

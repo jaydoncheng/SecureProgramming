@@ -19,7 +19,9 @@ struct worker_state {
   int server_fd;  /* server <-> worker bidirectional notification channel */
   int server_eof;
   struct client_state client;
-  /* TODO worker state variables go here */
+
+  SSL_CTX *ssl_ctx;
+  SSL *ssl;
 };
 
 /**
@@ -27,13 +29,12 @@ struct worker_state {
  *        the client.
  */
 static int handle_s2w_notification(struct worker_state *state) {
-  /* TODO implement the function */
   
   struct db_msg db_msg;
   read_latest_msg(&db_msg);
   char *msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
   sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
-  send(state->api.fd, msg, strlen(msg), 0);
+  api_send(state->ssl, state->api.fd, msg, strlen(msg));
   
   return 0;
 }
@@ -101,7 +102,7 @@ int send_chat_history(struct worker_state *state) {
       return -1;
     }
     if (FD_ISSET(state->api.fd, &writefds)) {
-      r = send(state->api.fd, msg, strlen(msg), 0);
+      r = api_send(state->ssl, state->api.fd, msg, strlen(msg));
       free(msg);
     }
     
@@ -151,7 +152,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       char password[64];
 
       if(state->client.isLoggedIn == 1) {
-        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
         goto cleanup;
       }
 
@@ -164,11 +165,11 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       printf("User wants to register with username %s and password %s\n", username, password);
       int rc = register_user(username, password);
       if (rc) {
-        sprintf(cmd_user_alr_exst, "error: user %s already exists\n", username);
-        send(state->api.fd, cmd_user_alr_exst, strlen(cmd_user_alr_exst), 0);
+        sprintf(cmd_fail, "error: user %s already exists\n", username);
+        api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
         }
       else {
-        send(state->api.fd, cmd_reg_success, strlen(cmd_reg_success), 0);
+        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
@@ -176,9 +177,12 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
 
       goto cleanup;
 
+missing_args:
+      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
+
     } else if(strcmp(t, "/login") == 0){
       if(state->client.isLoggedIn == 1) {
-        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
         goto cleanup;
       }
       char username[32];
@@ -191,15 +195,19 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       if ((t = strtok(NULL, delim)) != NULL) goto invalid_format;
 
       printf("User wants to log in with username %s and password %s\n", username, password);
+      
       int rc = login_user(username, password);
-      if (rc) send(state->api.fd, cmd_invalid_cred, strlen(cmd_invalid_cred), 0);
+      if (rc) api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
       else {
-        send(state->api.fd, cmd_auth_suc, strlen(cmd_auth_suc), 0);
+        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
       }
       goto cleanup;
+
+missing_args_login:
+      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
     } else if(strcmp(t, "/users") == 0) {
       if(state->client.isLoggedIn != 1) {
@@ -213,8 +221,9 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       print_users(state->api.fd);
       
     } else {
-      sprintf(cmd_unknown_com, "error: unknown command %s\n", t);
-      send(state->api.fd, cmd_unknown_com, strlen(cmd_unknown_com), 0);
+      char cmd_msg[64];
+      sprintf(cmd_msg, "error: unknown command %s\n", t);
+      api_send(state->ssl, state->api.fd, cmd_msg, strlen(cmd_msg));
     }
 invalid_format:
     send(state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format), 0);
@@ -225,7 +234,7 @@ cleanup:
   
   /* store messages in database */
   if(state->client.isLoggedIn != 1) {
-    send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+    api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
     free(buf);
     free(newBuf);
     return 0;
@@ -255,7 +264,7 @@ cleanup:
       free(finalMsg);
       notify_workers(state);
     } else {
-      send(state->api.fd, cmd_fail_rcv_not_found, strlen(cmd_fail_rcv_not_found), 0);
+      api_send(state->ssl, state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv));
     }
     free(copy);
   } else {
@@ -265,8 +274,7 @@ cleanup:
 
   free(newBuf);
   free(buf);
-  return 0; // <-- wtf does this have to be
-            // turns out it has to be zero lol TODO: document return codes of functions
+  return 0;
 }
 
 /**
@@ -281,7 +289,7 @@ static int handle_client_request(struct worker_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(state->ssl, &state->api, &msg);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -295,7 +303,7 @@ static int handle_client_request(struct worker_state *state) {
   }
 
   /* clean up state associated with the message */
-  api_recv_free(&msg);
+  api_msg_free(&msg);
 
   return success ? 0 : -1;
 }
@@ -390,8 +398,11 @@ static int worker_state_init(
   /* set up API state */
   api_state_init(&state->api, connfd);
 
-  /* TODO any additional worker state initialization */
+  state->ssl_ctx = SSL_CTX_new(TLS_server_method());
+  state->ssl = SSL_new(state->ssl_ctx);
 
+  SSL_use_certificate_file(state->ssl, "./serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
+  SSL_use_PrivateKey_file(state->ssl, "./serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
   return 0;
 }
 
@@ -402,8 +413,8 @@ static int worker_state_init(
  */
 static void worker_state_free(
   struct worker_state *state) {
-  /* TODO any additional worker state cleanup */
-
+  SSL_free(state->ssl);
+  SSL_CTX_free(state->ssl_ctx);
   /* clean up API state */
   api_state_free(&state->api);
 
@@ -432,7 +443,12 @@ void worker_start(
   if (worker_state_init(&state, connfd, server_fd) != 0) {
     goto cleanup;
   }
-  /* TODO any additional worker initialization */
+
+
+  set_nonblock(connfd);
+  SSL_set_fd(state.ssl, connfd);
+  ssl_block_accept(state.ssl, connfd); /* wtf does this do */
+
   //send_chat_history(&state);
   /* handle for incoming requests */
   while (!state.eof) {
@@ -444,7 +460,6 @@ void worker_start(
 
 cleanup:
   /* cleanup worker */
-  /* TODO any additional worker cleanup */
   worker_state_free(&state);
 
   exit(success ? 0 : 1);

@@ -8,7 +8,6 @@
 #define MAX_STDIN_LEN 4095
 
 struct ui_state {
-  /* TODO add fields to store the command arguments */
   char *content;
   int cont_buf_len;
 };
@@ -16,7 +15,6 @@ struct ui_state {
 void ui_state_free(struct ui_state *state);
 void ui_state_init(struct ui_state *state);
 
-/* TODO add UI calls interact with user on stdin/stdout */
 int ui_read_stdin(struct ui_state *state, int offset);
 
 #endif /* defined(_UI_H_) */
