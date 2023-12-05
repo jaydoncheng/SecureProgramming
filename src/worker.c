@@ -214,7 +214,6 @@ missing_args_login:
         goto cleanup;
       }
       print_users(state->api.fd);
-      notify_workers(state);
     } else {
       printf("String started with /\n");
       char cmd_msg[64];
