@@ -17,7 +17,7 @@
 #include "server.h"
 #include "database.h"
 
-static int create_server_socket(uint16_t port) {
+static int create_server_socket(struct server_state *state, uint16_t port) {
   int fd;
   struct sockaddr_in addr;
 
@@ -49,6 +49,8 @@ static int create_server_socket(uint16_t port) {
     perror("error: cannot listen on server socket");
     goto error;
   }
+
+
 
   return fd;
 
@@ -281,8 +283,6 @@ static int server_state_init(struct server_state *state) {
     state->children[i].worker_fd = -1;
   }
 
-  
-
   /* TODO any additional server state initialization */
 
   return 0;
@@ -380,7 +380,7 @@ int main(int argc, char **argv) {
   /* TODO any additional server initialization */
 
   /* start listening for connections */
-  state.sockfd = create_server_socket(port);
+  state.sockfd = create_server_socket(&state, port);
   if (state.sockfd < 0) return 1;
 
   /* wait for connections */
