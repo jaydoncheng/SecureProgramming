@@ -215,9 +215,7 @@ missing_args_login:
         goto cleanup;
       }
       print_users(state->api.fd);
-      notify_workers(state);
     } else {
-      printf("String started with /\n");
       char cmd_msg[64];
       sprintf(cmd_msg, "error: unknown command %s\n", t);
       send(state->api.fd, cmd_msg, strlen(cmd_msg), 0);
@@ -235,43 +233,33 @@ cleanup:
   }
 
   if(buf[0] == '@') {
-    // char cmd_args[] = "@<username> <message>\n";
-    char cmd_success[] = "Successfully sent private message\n";
     char cmd_fail_rcv[] = "error: user not found\n";
 
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
     strcpy(copy, buf);
-    char username[32];
-    char messageContent[256];
-
-    char *space_position = strstr(copy, " ");
-    size_t message_length = strlen(space_position + 1);
-    strncpy(messageContent, space_position + 1, message_length);
+    char *username = NULL;
 
     char *t = strtok(copy, delim);
-    strncpy(username, t + 1, sizeof(username) - 1);
+    //strncpy(username, t + 1, sizeof(username) - 1);
+    username = strdup(t + 1);
 
     printf("Username: %s\n", username);
-    printf("Message content: %s\n", messageContent);
+    printf("Message content: %s\n", buf);
 
-    if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
-      send(state->api.fd, cmd_success, strlen(cmd_success), 0);
-      notify_workers(state);
+    sqlite3 *db = NULL;
+    if (open_db(&db) != 0) {
+      return -1;
     }
-    else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
-
+    if(user_exists(db, username)) {
+      handle_msg(state->client.username, username, buf);
+      notify_workers(state);
+    } else {
+      send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
+    }
+    free(copy);
   } else {
-    struct db_msg db_msg;
-    db_msg.content = calloc(strlen(buf), sizeof(char));
-
-    char timestamp[TIME_STR_SIZE];
-    get_current_time(timestamp);
-    strcpy(db_msg.timestamp, timestamp);
-    strcpy(db_msg.sender, state->client.username);
-    strcpy(db_msg.receiver, "Null");
-    strcpy(db_msg.content, buf);
-    write_msg(&db_msg);
+    handle_msg(state->client.username, "Null", buf);
     notify_workers(state);
   }
 
