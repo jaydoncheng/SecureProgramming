@@ -105,10 +105,10 @@ int send_chat_history(struct worker_state *state) {
     if (FD_ISSET(state->api.fd, &writefds)) {
       r = api_send(state->ssl, state->api.fd, msg, strlen(msg));
       free(msg);
+      free(db_msg.content);
     }
     
   }
-
   sqlite3_finalize(stmt);
   sqlite3_close(db);
   return error;
@@ -313,7 +313,7 @@ cleanup:
   write_msg(&db_msg);
 
   notify_workers(state);
-
+  free(db_msg.content);
   free(newBuf);
   free(buf);
   return 0;

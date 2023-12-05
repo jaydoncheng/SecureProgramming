@@ -134,12 +134,11 @@ int user_check(char username[32]) {
   sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
   rc = sqlite3_step(stmt);
   sqlite3_finalize(stmt);
+  close_db(db);
 
   if (rc == SQLITE_ROW) {
-    close_db(db);
     return 1;
   }
-  
   return 0;
 }
 
@@ -242,19 +241,3 @@ int register_user(char username[32], char password[64]) {
   free(hash);
   return 0;
 }
-
-int handle_msg(char *sender, char *receiver, char *msgContent) {
-  struct db_msg db_msg;
-  db_msg.content = calloc(strlen(msgContent), sizeof(char));
-
-  char timestamp[TIME_STR_SIZE];
-  get_current_time(timestamp);
-  strcpy(db_msg.timestamp, timestamp);
-  strcpy(db_msg.sender, sender);
-  strcpy(db_msg.receiver, receiver);
-  strcpy(db_msg.content, msgContent);
-  write_msg(&db_msg);
-
-  return 0;
-}
-
