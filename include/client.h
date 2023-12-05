@@ -6,7 +6,13 @@
 #include "util.h"
 #include "ssl-nonblock.h"
 
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+
+#define CA_CERT "clientkeys/ca-cert.pem"
 #define TIMEOUT_SECONDS 15
+#define SERVER "server.self.com"
 
 struct client_state {
   struct api_state api;

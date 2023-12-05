@@ -44,8 +44,6 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
-  // SSL_CTX_load_verify_locations(state->ssl_ctx, )
-
 
   /* set non-blocking*/
   if (set_nonblock(fd) < 0) return -1;
@@ -53,7 +51,48 @@ static int client_connect(struct client_state *state,
   SSL_set_fd(state->ssl, fd);
   if (ssl_block_connect(state->ssl, fd) < 0) return -1;
 
+  X509 *server_cert, *ca_cert;
+  X509_NAME *name;
+  char *commonName; int len;
+  EVP_PKEY *ca_pubkey;
+  int r;
 
+  server_cert = SSL_get_peer_certificate(state->ssl);
+  
+  FILE *fp = fopen(CA_CERT, "rb");
+  if (!fp) {
+    fprintf(stderr, "failed to open file: %s\n", strerror(errno));
+    return -1;
+  }
+
+  ca_cert = PEM_read_X509_AUX(fp, NULL, NULL, NULL);
+  if (!ca_cert) {
+    fprintf(stderr, "failed to read CA cert\n");
+    return -1;
+  }
+
+  ca_pubkey = X509_get0_pubkey(ca_cert);
+
+  r = X509_verify(server_cert, ca_pubkey);
+  if (r != 1) {
+    fprintf(stderr, "certificate sign error: %i\n", SSL_get_error(state->ssl, r));
+    return -1; 
+  }
+
+  name = X509_get_subject_name(server_cert);
+  len = X509_NAME_get_text_by_NID(name, NID_commonName, NULL, 0);
+
+  commonName = malloc(len+1);
+  X509_NAME_get_text_by_NID(name, NID_commonName, commonName, len + 1);
+  if (strcmp(commonName, SERVER) != 0) {
+    free(commonName);
+    return -1;
+  }
+
+  // implement signature checking
+ 
+  free(commonName);
+  X509_free(server_cert);
   return fd;
 }
 
@@ -192,9 +231,12 @@ static int client_state_init(struct client_state *state) {
   memset(state, 0, sizeof(*state));
 
   /* SSL Context */
-  state->ssl_ctx = SSL_CTX_new(TLS_client_method());
+  state->ssl_ctx = SSL_CTX_new(TLS_client_method()); 
+  SSL_CTX_load_verify_locations(state->ssl_ctx, CA_CERT, NULL);
   state->ssl = SSL_new(state->ssl_ctx);
+  SSL_set_verify(state->ssl, SSL_VERIFY_PEER, NULL);
   
+
   /* initialize UI */
   ui_state_init(&state->ui);
 

@@ -19,8 +19,8 @@
 int ssl_block_if_needed(SSL *ssl, int fd, int r);
 int ssl_block_accept(SSL *ssl, int fd);
 int ssl_block_connect(SSL *ssl, int fd);
-int ssl_block_read(SSL *ssl, int fd, void *buf, int len);
-int ssl_block_write(SSL *ssl, int fd, const void *buf, int len);
+// int ssl_block_read(SSL *ssl, int fd, void *buf, int len);
+// int ssl_block_write(SSL *ssl, int fd, const void *buf, int len);
 int ssl_has_data(SSL *ssl);
 int set_nonblock(int fd);
 

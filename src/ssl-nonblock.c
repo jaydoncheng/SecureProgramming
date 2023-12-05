@@ -4,7 +4,8 @@
 #include "ssl-nonblock.h"
 
 /* This code, along with ssl-nonblock.h, was taken from the
- * openssl-examples provided by the course.
+ * openssl-examples provided by the course. Some functions
+ * are unused and thus commented out.
  * see header file for explanation of code
 */
 int ssl_block_if_needed(SSL *ssl, int fd, int r) {
@@ -76,61 +77,61 @@ int ssl_block_connect(SSL *ssl, int fd) {
   }
 }
 
-int ssl_block_read(SSL *ssl, int fd, void *buf, int len) {
-  char *p = buf, *pend = p + len;
-  int r;
+// int ssl_block_read(SSL *ssl, int fd, void *buf, int len) {
+//   char *p = buf, *pend = p + len;
+//   int r;
 
-  /* return value:
-   *   -1: error
-   *    0: end-of-file
-   *   >0: number of bytes read
-   */
+//   /* return value:
+//    *   -1: error
+//    *    0: end-of-file
+//    *   >0: number of bytes read
+//    */
 
-  /* we may need to do multiple reads in case one returns prematurely */
-  while (p < pend) {
-    /* attempt to read */
-    r = SSL_read(ssl, p, pend - p);
-    if (r > 0) {
-      p += r;
-      break;
-    }
+//   /* we may need to do multiple reads in case one returns prematurely */
+//   while (p < pend) {
+//     /* attempt to read */
+//     r = SSL_read(ssl, p, pend - p);
+//     if (r > 0) {
+//       p += r;
+//       break;
+//     }
 
-    /* do we need to block? */
-    r = ssl_block_if_needed(ssl, fd, r);
-    if (r < 0) return -1;
-    if (r == 0) break;
-  }
+//     /* do we need to block? */
+//     r = ssl_block_if_needed(ssl, fd, r);
+//     if (r < 0) return -1;
+//     if (r == 0) break;
+//   }
 
-  return p - (char *) buf;
-}
+//   return p - (char *) buf;
+// }
 
-int ssl_block_write(SSL *ssl, int fd, const void *buf, int len) {
-  const char *p = buf, *pend = p + len;
-  int r;
+// int ssl_block_write(SSL *ssl, int fd, const void *buf, int len) {
+//   const char *p = buf, *pend = p + len;
+//   int r;
 
-  /* return value:
-   *   -1: error
-   *    0: end-of-file
-   *   >0: number of bytes written
-   */
+//   /* return value:
+//    *   -1: error
+//    *    0: end-of-file
+//    *   >0: number of bytes written
+//    */
 
-  /* we may need to do multiple writes in case one returns prematurely */
-  while (p < pend) {
-    /* attempt to write */
-    r = SSL_write(ssl, p, pend - p);
-    if (r > 0) {
-      p += r;
-      break;
-    }
+//   /* we may need to do multiple writes in case one returns prematurely */
+//   while (p < pend) {
+//     /* attempt to write */
+//     r = SSL_write(ssl, p, pend - p);
+//     if (r > 0) {
+//       p += r;
+//       break;
+//     }
     
-    /* do we need to block? */
-    r = ssl_block_if_needed(ssl, fd, r);
-    if (r < 0) return -1;
-    if (r == 0) break;
-  }
+//     /* do we need to block? */
+//     r = ssl_block_if_needed(ssl, fd, r);
+//     if (r < 0) return -1;
+//     if (r == 0) break;
+//   }
 
-  return p - (char *) buf;
-}
+//   return p - (char *) buf;
+// }
 
 int ssl_has_data(SSL *ssl) {
   char byte;

@@ -27,7 +27,6 @@ int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg) {
   ssize_t total = 0; /* also an offset for where to continue writing to */
   ssize_t count = 0;
   while ((count = SSL_read(ssl, msg->content + total, msg->cont_buf_len - total)) > 0) { 
-    printf("or this failed\n");
     if (count < 0) {
       fprintf(stderr, "error: recv failed: %s\n", strerror(errno));
       return -1;

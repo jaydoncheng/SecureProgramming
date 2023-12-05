@@ -34,10 +34,10 @@ server_keys:
 	python3 gen_keys.py $(SERVERKEY_DIR) server
 
 create_ca:
-	python3 setup_ttp.py create_ca
+	python3 ttp.py create_ca
 
 sign_server:
-	python3 setup_ttp.py create_server_cert $(SERVERKEY_DIR)/privkey-server.pem $(SERVERKEY_DIR)/ca-cert.pem $(TTP_DIR)/ca-key.pem
+	python3 ttp.py create_server_cert $(SERVERKEY_DIR)/privkey-server.pem
 
 server: $(addprefix $(OBJ_DIR)/, $(SERVER_OBJS))
 	gcc $^ -o server $(LDLIBS)
