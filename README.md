@@ -35,7 +35,8 @@ File: chat.db
 * username: User's chosen username
 * password: Hashed password
 * salt: Salt used in password hashing
-* User Registration:
+
+User Registration:
 
 Prevent registration with the username "Null" to avoid conflicts with public message handling.
 Database Functions (in database.c)
