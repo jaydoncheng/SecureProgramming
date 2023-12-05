@@ -28,35 +28,37 @@
 ## Database Structure:
 File: chat.db
 
-Tables:
+**Tables**
 
-messages:
+**messages:**
+* id: Message ID
+* timestamp: Timestamp of the message
+* sender: Sender's username
+* receiver: Receiver's username (set to "Null" for public messages)
+* content: Message content
 
-id: Message ID
-timestamp: Timestamp of the message
-sender: Sender's username
-receiver: Receiver's username (set to "Null" for public messages)
-content: Message content
-users:
+**users:**
 
-id: User ID
-username: User's chosen username
-password: Hashed password
-salt: Salt used in password hashing
-User Registration:
+* id: User ID
+* username: User's chosen username
+* password: Hashed password
+* salt: Salt used in password hashing
+* User Registration:
 
 Prevent registration with the username "Null" to avoid conflicts with public message handling.
 Database Functions (in database.c)
+
 Generic Database Functions:
 
-open_db: Open the database file.
-init_db: Initialize the database structure and tables.
-close_db: Close the database connection.
+* open_db: Open the database file.
+* init_db: Initialize the database structure and tables.
+* close_db: Close the database connection.
+
 Reading and Writing Functions:
 
-read_latest_msg: Retrieve the latest message from the database.
-write_msg: Write a new message to the database.
-print_users: Display the list of registered users.
+* read_latest_msg: Retrieve the latest message from the database.
+* write_msg: Write a new message to the database.
+* print_users: Display the list of registered users.
 
 ## Security Design
 ### Messages between client and server
