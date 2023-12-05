@@ -1,16 +1,6 @@
 # Secure Programming 2023 - Webchat
 
-## todo
-- [ ] users
-    - [ ] user authentication (username/password)
-    - [ ] private messages to users using @name syntax
-    - [ ] list of logged in users
-- [ ] keys
-    - [ ] trusted third party for public key management (openssl script)
-        - needs documentation on what ttp server receives and does
-- [ ] proper command handling/user interface
-    - [ ] an unknown command "/unknown" should give an error message
-    - state variables for arguments
+
 ## Commands:
 1. User Registration and Login Commands:
 /register <user> <password>: Register with a chosen username and securely hashed password.
@@ -22,8 +12,10 @@
 3. Exit Command:
 /exit: Gracefully exit the chat application, ensuring a clean disconnection.
 
-4. Private Message Command:
+4. Private Message Command: **Not working**
 @user <private message>: Send a private, securely encrypted message to the specified user.
+**A memory leak (which we could not find in time) is causing private messages to crash the server,
+which we think is from a loose database pointer (or some other pointer) due to invalid logic**
 
 ## Database Structure:
 File: chat.db
