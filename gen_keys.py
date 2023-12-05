@@ -1,29 +1,22 @@
 import os
 import subprocess
-import argparse
+import sys
 
-def generate_key_pair(output_directory):
-    # Ensure the output directory exists
-    os.makedirs(output_directory, exist_ok=True)
-
+def generate_key_pair(directory, tag):
     # Generate private key
-    private_key_path = os.path.join(output_directory, 'privkey.pem')
+    private_key_path = os.path.join(directory, f'privkey-{tag}.pem')
     subprocess.run(['openssl', 'genrsa', '-out', private_key_path])
 
     # Generate public key from private key
-    public_key_path = os.path.join(output_directory, 'pubkey.pem')
+    public_key_path = os.path.join(directory, f'pubkey-{tag}.pem')
     subprocess.run(['openssl', 'rsa', '-pubout', '-in', private_key_path, '-out', public_key_path])
 
-    print(f'Key pair generated and saved in {output_directory}')
+    print(f'Key pair generated and saved in {directory}')
     print(f'Private key: {private_key_path}')
     print(f'Public key: {public_key_path}')
 
-def main():
-    parser = argparse.ArgumentParser(description='Generate OpenSSL private-public key pair')
-    parser.add_argument('output_directory', help='Directory to store the generated keys')
-
-    args = parser.parse_args()
-    generate_key_pair(args.output_directory)
-
 if __name__ == "__main__":
-    main()
+    if (len(sys.argv) != 3):
+        exit
+
+    generate_key_pair(sys.argv[1], sys.argv[2])

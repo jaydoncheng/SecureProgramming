@@ -47,7 +47,7 @@
         {
             "label": "sleep",
             "type": "shell",
-            "command": "sleep 3",
+            "command": "sleep 5",
             "group": "none",
             "presentation": {
                 "reveal": "silent",

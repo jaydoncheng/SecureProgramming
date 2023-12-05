@@ -53,13 +53,34 @@ int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg) {
 /**
  * @brief         Clean up information stored in msg
  */
-void api_recv_free(struct api_msg *msg) {
+void api_msg_free(struct api_msg *msg) {
 
   assert(msg);
 
   free(msg->content);
   /* TODO clean up state allocated for msg */
 }
+
+int api_send(SSL *ssl, int fd, const void *buf, int len) {
+  /* Code taken from ssl_block_write in the provided examples */
+  const char *p = buf, *pend = p + len;
+  int r;
+
+  while (p < pend) {
+    r = SSL_write(ssl, p, pend - p);
+    if (r > 0) {
+      p += r;
+      break;
+    }
+
+    r = ssl_block_if_needed(ssl, fd, r);
+    if (r < 0) return -1;
+    if (r == 0) break;
+  }
+
+  return 0;
+}
+
 
 /**
  * @brief         Frees api_state context

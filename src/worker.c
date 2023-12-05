@@ -36,7 +36,7 @@ static int handle_s2w_notification(struct worker_state *state) {
   read_latest_msg(&db_msg);
   char *msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
   sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
-  send(state->api.fd, msg, strlen(msg), 0);
+  api_send(state->ssl, state->api.fd, msg, strlen(msg));
   
   return 0;
 }
@@ -104,7 +104,7 @@ int send_chat_history(struct worker_state *state) {
       return -1;
     }
     if (FD_ISSET(state->api.fd, &writefds)) {
-      r = send(state->api.fd, msg, strlen(msg), 0);
+      r = api_send(state->ssl, state->api.fd, msg, strlen(msg));
       free(msg);
     }
     
@@ -142,7 +142,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
     
     if (strcmp(t, "/register") == 0) {
       if(state->client.isLoggedIn == 1) {
-        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
         goto cleanup;
       }
       char cmd_args[] = "error: invalid command format\n";
@@ -161,10 +161,10 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       int rc = register_user(username, password);
       if (rc) {
         sprintf(cmd_fail, "error: user %s already exists\n", username);
-        send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
         }
       else {
-        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
@@ -173,11 +173,11 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
       goto cleanup;
 
 missing_args:
-      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
     } else if(strcmp(t, "/login") == 0){
       if(state->client.isLoggedIn == 1) {
-        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
         goto cleanup;
       }
       char cmd_args[] = "error: invalid command format\n";
@@ -194,9 +194,9 @@ missing_args:
 
       printf("User wants to log in with username %s and password %s\n", username, password);
       int rc = login_user(username, password);
-      if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
+      if (rc) api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
       else {
-        send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+        api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
         state->client.username = strdup(username);
         state->client.isLoggedIn = 1;
         send_chat_history(state);
@@ -204,13 +204,13 @@ missing_args:
       goto cleanup;
 
 missing_args_login:
-      send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+      api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
     } else {
       printf("String started with /\n");
       char cmd_msg[64];
       sprintf(cmd_msg, "error: unknown command %s\n", t);
-      send(state->api.fd, cmd_msg, strlen(cmd_msg), 0);
+      api_send(state->ssl, state->api.fd, cmd_msg, strlen(cmd_msg));
     }
 cleanup:
     free(copy);
@@ -219,7 +219,7 @@ cleanup:
   
   /* store public message in database */
   if(state->client.isLoggedIn != 1) {
-    send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+    api_send(state->ssl, state->api.fd, cmd_fail_log, strlen(cmd_fail_log));
     free(buf);
     return 0;
   }
@@ -246,9 +246,9 @@ cleanup:
     printf("Message content: %s\n", messageContent);
 
     if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
-      send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+      api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
     }
-    else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
+    else api_send(state->ssl, state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv));
 
   } else {
     struct db_msg db_msg;
@@ -296,7 +296,7 @@ static int handle_client_request(struct worker_state *state) {
   }
 
   /* clean up state associated with the message */
-  api_recv_free(&msg);
+  api_msg_free(&msg);
 
   return success ? 0 : -1;
 }
@@ -439,8 +439,8 @@ void worker_start(
   }
   /* TODO any additional worker initialization */
 
-  // SSL_use_certificate_file(...)
-  // SSL_use_Private_key_file(...)
+  SSL_use_certificate_file(state.ssl, "./serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
+  SSL_use_PrivateKey_file(state.ssl, "./serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
 
   set_nonblock(connfd);
   SSL_set_fd(state.ssl, connfd);

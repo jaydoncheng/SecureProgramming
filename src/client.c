@@ -84,7 +84,7 @@ static int client_process_command(struct client_state *state) {
   }
 
   int r = 0;
-  r = send(state->api.fd, state->ui.content, strlen(state->ui.content), 0);
+  r = api_send(state->ssl, state->api.fd, state->ui.content, strlen(state->ui.content));
   // ^ very primitive, i think we're supposed to use api.c
   // so messages are standardized
   if (r < 0) {
@@ -134,7 +134,7 @@ static int handle_server_request(struct client_state *state) {
   }
 
   /* clean up state associated with the message */
-  api_recv_free(&msg);
+  api_msg_free(&msg);
 
   return success ? 0 : -1;
 }
@@ -190,8 +190,8 @@ static int client_state_init(struct client_state *state) {
   memset(state, 0, sizeof(*state));
 
   /* SSL Context */
-  state->ssl = SSL_new(state->ssl_ctx);
   state->ssl_ctx = SSL_CTX_new(TLS_client_method());
+  state->ssl = SSL_new(state->ssl_ctx);
   
   /* initialize UI */
   ui_state_init(&state->ui);
