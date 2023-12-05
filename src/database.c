@@ -167,9 +167,9 @@ int login_user(char username[32], char password[64]) {
     const unsigned char *salt = sqlite3_column_text(stmt, 1);
     const char *stored_hash = (const char *)sqlite3_column_text(stmt, 0);
 
-    unsigned char computed_hash[HASH_SIZE];
-    generate_hash(password, salt, computed_hash);
+    unsigned char *computed_hash = calloc(sizeof(unsigned char), HASH_SIZE);
 
+    generate_hash(password, salt, computed_hash);
     if (strcmp(stored_hash, (const char *)computed_hash) == 0) {
       // Passwords match
       printf("Login successful\n");
@@ -178,6 +178,7 @@ int login_user(char username[32], char password[64]) {
       printf("Incorrect password\n");
       return -1;
     }
+    free(computed_hash);
   } else {
     // An error occurred during execution
     fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
@@ -200,8 +201,9 @@ int register_user(char username[32], char password[64]) {
   rc = prepare_statement(db, "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", &stmt);
   if (rc == -1) return -1;
 
-  unsigned char salt[SALT_SIZE];
-  unsigned char hash[HASH_SIZE];
+  unsigned char *salt = calloc(sizeof(unsigned char), SALT_SIZE);
+  unsigned char *hash = calloc(sizeof(unsigned char), HASH_SIZE);
+  
   generate_salt(salt);
   generate_hash(password, salt, hash);
 
@@ -216,6 +218,8 @@ int register_user(char username[32], char password[64]) {
 
   sqlite3_finalize(stmt);
   sqlite3_close(db);
+  free(salt);
+  free(hash);
   return 0;
 }
 

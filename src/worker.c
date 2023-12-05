@@ -190,6 +190,7 @@ missing_args:
       if ((t = strtok(NULL, delim)) != NULL) goto missing_args_login;
 
       printf("User wants to log in with username %s and password %s\n", username, password);
+      
       int rc = login_user(username, password);
       if (rc) send(state->api.fd, cmd_fail, strlen(cmd_fail), 0);
       else {
