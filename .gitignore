@@ -6,3 +6,5 @@ chat.db
 */chat.db
 /test-tmp
 /test/__pycache__
+/serverkeys
+/clientkeys
