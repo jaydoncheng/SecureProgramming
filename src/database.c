@@ -167,9 +167,9 @@ int login_user(char username[32], char password[64]) {
     const unsigned char *salt = sqlite3_column_text(stmt, 1);
     const char *stored_hash = (const char *)sqlite3_column_text(stmt, 0);
 
-    unsigned char computed_hash[HASH_SIZE];
-    generate_hash(password, salt, computed_hash);
+    unsigned char *computed_hash = calloc(sizeof(unsigned char), HASH_SIZE);
 
+    generate_hash(password, salt, computed_hash);
     if (strcmp(stored_hash, (const char *)computed_hash) == 0) {
       // Passwords match
       printf("Login successful\n");
@@ -178,6 +178,7 @@ int login_user(char username[32], char password[64]) {
       printf("Incorrect password\n");
       return -1;
     }
+    free(computed_hash);
   } else {
     // An error occurred during execution
     fprintf(stderr, "Execution failed: %s\n", sqlite3_errmsg(db));
@@ -200,8 +201,9 @@ int register_user(char username[32], char password[64]) {
   rc = prepare_statement(db, "INSERT INTO users (username, password, salt) VALUES (?, ?, ?)", &stmt);
   if (rc == -1) return -1;
 
-  unsigned char salt[SALT_SIZE];
-  unsigned char hash[HASH_SIZE];
+  unsigned char *salt = calloc(sizeof(unsigned char), SALT_SIZE);
+  unsigned char *hash = calloc(sizeof(unsigned char), HASH_SIZE);
+  
   generate_salt(salt);
   generate_hash(password, salt, hash);
 
@@ -216,6 +218,23 @@ int register_user(char username[32], char password[64]) {
 
   sqlite3_finalize(stmt);
   sqlite3_close(db);
+  free(salt);
+  free(hash);
+  return 0;
+}
+
+int handle_msg(char *sender, char *receiver, char *msgContent) {
+  struct db_msg db_msg;
+  db_msg.content = calloc(strlen(msgContent), sizeof(char));
+
+  char timestamp[TIME_STR_SIZE];
+  get_current_time(timestamp);
+  strcpy(db_msg.timestamp, timestamp);
+  strcpy(db_msg.sender, sender);
+  strcpy(db_msg.receiver, receiver);
+  strcpy(db_msg.content, msgContent);
+  write_msg(&db_msg);
+
   return 0;
 }
 
@@ -237,4 +256,52 @@ int handle_prv_msg(char username[32], char rcv_username[32], char messageContent
   }
   else return 1;
   return 0;
+}
+
+int print_users(int api_fd) {
+    
+  sqlite3 *db;
+  char *msg;
+  char username[32];
+  sqlite3_stmt *stmt = NULL;
+  int error = 0;
+
+  fd_set writefds;
+  FD_ZERO(&writefds);
+  FD_SET(api_fd, &writefds);
+  int fdmax = api_fd;
+
+  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+
+  char *query = "SELECT username FROM users";
+
+  prepare_statement(db, query, &stmt);
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+
+    msg = calloc(sizeof(username), sizeof(char));
+    strncpy(msg, (const char*)sqlite3_column_text(stmt, 0), sizeof(username));
+    char* modifiedMsg = appendHyphenAndNewline(msg);
+
+    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
+    if (r < 0) {
+      perror("dude im sot ired");
+      free(msg);
+      free(modifiedMsg);
+      return -1;
+    }
+    if (FD_ISSET(api_fd, &writefds)) {
+      r = send(api_fd, modifiedMsg, strlen(modifiedMsg), 0);
+      free(msg);
+      free(modifiedMsg);
+    }
+    
+  }
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return error;
 }

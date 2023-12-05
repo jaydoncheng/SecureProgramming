@@ -13,6 +13,7 @@ void generate_salt(unsigned char *salt);
 void generate_hash(const char *password, const unsigned char *salt, unsigned char *hash);
 
 int get_current_time(char *buf);
+char* appendHyphenAndNewline(const char* input);
 #define TIME_STR_SIZE 20
 
 #define SALT_SIZE 16

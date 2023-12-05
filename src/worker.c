@@ -193,6 +193,7 @@ missing_args:
       if ((t = strtok(NULL, delim)) != NULL) goto missing_args_login;
 
       printf("User wants to log in with username %s and password %s\n", username, password);
+      
       int rc = login_user(username, password);
       if (rc) api_send(state->ssl, state->api.fd, cmd_fail, strlen(cmd_fail));
       else {
@@ -206,8 +207,18 @@ missing_args:
 missing_args_login:
       api_send(state->ssl, state->api.fd, cmd_args, strlen(cmd_args));
 
+    } else if(strcmp(t, "/users") == 0) {
+      char cmd_args[] = "error: invalid command format\n";
+      if(state->client.isLoggedIn != 1) {
+        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        goto cleanup;
+      }
+      if ((t = strtok(NULL, delim)) != NULL) {
+        send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+        goto cleanup;
+      }
+      print_users(state->api.fd);
     } else {
-      printf("String started with /\n");
       char cmd_msg[64];
       sprintf(cmd_msg, "error: unknown command %s\n", t);
       api_send(state->ssl, state->api.fd, cmd_msg, strlen(cmd_msg));
@@ -225,42 +236,33 @@ cleanup:
   }
 
   if(buf[0] == '@') {
-    // char cmd_args[] = "@<username> <message>\n";
-    char cmd_success[] = "Successfully sent private message\n";
     char cmd_fail_rcv[] = "error: user not found\n";
 
     const char delim[] = " \n\t";
     char *copy = calloc(strlen(buf), sizeof(char));
     strcpy(copy, buf);
-    char username[32];
-    char messageContent[256];
-
-    char *space_position = strstr(copy, " ");
-    size_t message_length = strlen(space_position + 1);
-    strncpy(messageContent, space_position + 1, message_length);
+    char *username = NULL;
 
     char *t = strtok(copy, delim);
-    strncpy(username, t + 1, sizeof(username) - 1);
+    //strncpy(username, t + 1, sizeof(username) - 1);
+    username = strdup(t + 1);
 
     printf("Username: %s\n", username);
-    printf("Message content: %s\n", messageContent);
+    printf("Message content: %s\n", buf);
 
-    if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
-      api_send(state->ssl, state->api.fd, cmd_success, strlen(cmd_success));
+    sqlite3 *db = NULL;
+    if (open_db(&db) != 0) {
+      return -1;
     }
-    else api_send(state->ssl, state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv));
-
+    if(user_exists(db, username)) {
+      handle_msg(state->client.username, username, buf);
+      notify_workers(state);
+    } else {
+      api_send(state->ssl, state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv));
+    }
+    free(copy);
   } else {
-    struct db_msg db_msg;
-    db_msg.content = calloc(strlen(buf), sizeof(char));
-
-    char timestamp[TIME_STR_SIZE];
-    get_current_time(timestamp);
-    strcpy(db_msg.timestamp, timestamp);
-    strcpy(db_msg.sender, state->client.username);
-    strcpy(db_msg.receiver, "Null");
-    strcpy(db_msg.content, buf);
-    write_msg(&db_msg);
+    handle_msg(state->client.username, "Null", buf);
     notify_workers(state);
   }
 
