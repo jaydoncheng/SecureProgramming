@@ -35,7 +35,7 @@ static int handle_s2w_notification(struct worker_state *state) {
   char *msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
   sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
   api_send(state->ssl, state->api.fd, msg, strlen(msg));
-  
+  free(db_msg.content);
   return 0;
 }
 
@@ -92,6 +92,7 @@ int send_chat_history(struct worker_state *state) {
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
     db_to_msg(&db_msg, stmt);
+    printf("size of msg: %li\n", DB_MSG_SIZE + strlen(db_msg.content) + 3);
     msg = calloc(DB_MSG_SIZE + strlen(db_msg.content) + 3, sizeof(char));
     sprintf(msg, "%s %s: %s", db_msg.timestamp, db_msg.sender, db_msg.content);
     
@@ -113,6 +114,53 @@ int send_chat_history(struct worker_state *state) {
   return error;
 }
 
+int print_users(struct worker_state *state) {
+    
+  sqlite3 *db;
+  char *msg;
+  char username[32];
+  sqlite3_stmt *stmt = NULL;
+  int error = 0;
+
+  fd_set writefds;
+  FD_ZERO(&writefds);
+  FD_SET(state->api.fd, &writefds);
+  int fdmax = state->api.fd;
+
+  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+
+  char *query = "SELECT username FROM users";
+
+  prepare_statement(db, query, &stmt);
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+
+    msg = calloc(sizeof(username), sizeof(char));
+    strncpy(msg, (const char*)sqlite3_column_text(stmt, 0), sizeof(username));
+    char* modifiedMsg = appendHyphenAndNewline(msg);
+
+    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
+    if (r < 0) {
+      perror("dude im sot ired");
+      free(msg);
+      free(modifiedMsg);
+      return -1;
+    }
+    if (FD_ISSET(state->api.fd, &writefds)) {
+      r = api_send(state->ssl, state->api.fd, modifiedMsg, strlen(modifiedMsg));
+      free(msg);
+      free(modifiedMsg);
+    }
+    
+  }
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return error;
+}
 /**
  * @brief         Handles a message coming from client
  * @param state   Initialized worker state
@@ -213,7 +261,7 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
         api_send(state->ssl, state->api.fd, cmd_invalid_format, strlen(cmd_invalid_format));
         goto cleanup;
       }
-      print_users(state->api.fd);
+      print_users(state);
       
     } else {
       sprintf(cmd_unknown_com, "error: unknown command %s\n", t);
@@ -233,38 +281,38 @@ cleanup:
     free(newBuf);
     return 0;
   }
+  char *sender = state->client.username;
+  char receiver[32];
+  strcpy(receiver, "Null\0");
 
-  if(newBuf[0] == '@') {
-    char *copy = calloc(strlen(newBuf), sizeof(char));
+  struct db_msg db_msg;
+  db_msg.content = calloc(strlen(newBuf), sizeof(char));
+
+  if (newBuf[0] == '@') {
+    char *copy = calloc(strlen(newBuf), 0);
     strcpy(copy, newBuf);
-    char *username = NULL;
 
     char *t = strtok(copy, delim);
-    username = strdup(t + 1);
+    strcpy(receiver, t + 1);
 
-    printf("Username: %s\n", username);
-    printf("Message content: %s\n", newBuf);
+    if (user_check(receiver)) {
 
-    sqlite3 *db = NULL;
-    if (open_db(&db) != 0) {
-      return -1;
-    }
-    if(user_exists(db, username)) {
-      char *msg = getMessageAfterUser(newBuf, username);
-      char *finalMsg = malloc(strlen(username) + strlen(msg) + 2);
-      sprintf(finalMsg, "@%s %s",username, msg);
-      handle_msg(state->client.username, username, finalMsg);
-      free(msg);
-      free(finalMsg);
-      notify_workers(state);
     } else {
+      strcpy(receiver, "Null\0");
       api_send(state->ssl, state->api.fd, cmd_fail_rcv_not_found, strlen(cmd_fail_rcv_not_found));
+      return 0;
     }
-    free(copy);
-  } else {
-    handle_msg(state->client.username, "Null", newBuf);
-    notify_workers(state);
   }
+
+  char timestamp[TIME_STR_SIZE];
+  get_current_time(timestamp);
+  strcpy(db_msg.timestamp, timestamp);
+  strcpy(db_msg.sender, sender);
+  strcpy(db_msg.receiver, receiver);
+  strcpy(db_msg.content, newBuf);
+  write_msg(&db_msg);
+
+  notify_workers(state);
 
   free(newBuf);
   free(buf);

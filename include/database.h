@@ -19,7 +19,7 @@ struct db_msg {
     char *content;
 };
 
-#define DB_MSG_SIZE sizeof(struct db_msg) - sizeof(char*)
+#define DB_MSG_SIZE sizeof(struct db_msg) 
 
 int open_db(sqlite3 **db);
 int init_db();
@@ -30,6 +30,7 @@ void db_to_msg(struct db_msg *msg, sqlite3_stmt *stmt);
 int read_latest_msg(struct db_msg *msg);
 int write_msg(struct db_msg *msg);
 int user_exists(sqlite3 *db, char username[32]);
+int user_check(char username[32]);
 
 void format_db_msg(struct db_msg *msg, char *buf);
 
@@ -38,5 +39,4 @@ int login_user(char username[32], char password[64]);
 int handle_prv_msg(char username[32], char rcv_username[32], char messageContent[256]);
 int handle_msg(char *sender, char *receiver, char *msgContent);
 int handle_pub_msg(char *username, char *msgContent);
-int print_users(int api_fd);
 #endif /* defined(_DATABASE_H_) */

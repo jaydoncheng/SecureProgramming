@@ -232,6 +232,8 @@ static int client_state_init(struct client_state *state) {
   state->ssl = SSL_new(state->ssl_ctx);
   SSL_set_verify(state->ssl, SSL_VERIFY_PEER, NULL);
   
+  // SSL_use_certificate_file(state->ssl, "./clientkeys/client-ca-cert.pem", SSL_FILETYPE_PEM);
+  // SSL_use_PrivateKey_file(state->ssl, "./clientkeys/privkey-client.pem", SSL_FILETYPE_PEM);
 
   /* initialize UI */
   ui_state_init(&state->ui);
