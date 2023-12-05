@@ -8,14 +8,12 @@
 #define DEFAULT_MSG_LEN 128
 
 struct api_msg {
-  /* TODO add information about message */
   char *content;
   int cont_buf_len;
 };
 
 struct api_state {
   int fd;
-  /* TODO add required fields */
 };
 
 
@@ -26,6 +24,5 @@ void api_msg_free(struct api_msg *msg);
 void api_state_free(struct api_state *state);
 void api_state_init(struct api_state *state, int fd);
 
-/* TODO add API calls to send messages to perform client-server interactions */
 
 #endif /* defined(_API_H_) */

@@ -57,7 +57,6 @@ void api_msg_free(struct api_msg *msg) {
   assert(msg);
 
   free(msg->content);
-  /* TODO clean up state allocated for msg */
 }
 
 int api_send(SSL *ssl, int fd, const void *buf, int len) {
@@ -87,7 +86,6 @@ void api_state_free(struct api_state *state) {
 
   assert(state);
 
-  /* TODO clean up API state */
 }
 
 /**
@@ -105,5 +103,4 @@ void api_state_init(struct api_state *state, int fd) {
   /* store connection socket */
   state->fd = fd;
 
-  /* TODO initialize API state */
 }

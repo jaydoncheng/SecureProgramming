@@ -22,7 +22,6 @@ struct worker_state {
 
   SSL_CTX *ssl_ctx;
   SSL *ssl;
-  /* TODO worker state variables go here */
 };
 
 /**
@@ -30,7 +29,6 @@ struct worker_state {
  *        the client.
  */
 static int handle_s2w_notification(struct worker_state *state) {
-  /* TODO implement the function */
   
   struct db_msg db_msg;
   read_latest_msg(&db_msg);
@@ -268,8 +266,7 @@ cleanup:
 
 
   free(buf);
-  return 0; // <-- wtf does this have to be
-            // turns out it has to be zero lol TODO: document return codes of functions
+  return 0;
 }
 
 /**
@@ -396,7 +393,6 @@ static int worker_state_init(
   state->ssl_ctx = SSL_CTX_new(TLS_server_method());
   state->ssl = SSL_new(state->ssl_ctx);
 
-  /* TODO any additional worker state initialization */
   SSL_use_certificate_file(state->ssl, "./serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
   SSL_use_PrivateKey_file(state->ssl, "./serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
   return 0;
@@ -409,7 +405,6 @@ static int worker_state_init(
  */
 static void worker_state_free(
   struct worker_state *state) {
-  /* TODO any additional worker state cleanup */
   SSL_free(state->ssl);
   SSL_CTX_free(state->ssl_ctx);
   /* clean up API state */
@@ -440,7 +435,6 @@ void worker_start(
   if (worker_state_init(&state, connfd, server_fd) != 0) {
     goto cleanup;
   }
-  /* TODO any additional worker initialization */
 
 
   set_nonblock(connfd);
@@ -458,7 +452,6 @@ void worker_start(
 
 cleanup:
   /* cleanup worker */
-  /* TODO any additional worker cleanup */
   worker_state_free(&state);
 
   exit(success ? 0 : 1);

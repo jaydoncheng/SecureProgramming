@@ -89,7 +89,7 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
-  // implement signature checking
+  // TODO: implement signature checking
  
   free(commonName);
   X509_free(server_cert);
@@ -104,10 +104,6 @@ static int client_connect(struct client_state *state,
 static int client_process_command(struct client_state *state) {
   
   assert(state);
-
-  /* TODO read and handle user command from stdin;
-   * set state->eof if there is no more input (read returns zero)
-   */
 
   int rc = ui_read_stdin(&state->ui, 0);
   if (rc < 0) {

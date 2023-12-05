@@ -23,7 +23,6 @@ struct client_state {
 
   SSL_CTX *ssl_ctx;
   SSL *ssl;
-  /* TODO client state variables go here */
 };
 
 #endif
