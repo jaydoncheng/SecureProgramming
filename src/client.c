@@ -31,16 +31,29 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
+  /* set timeout */
   struct timeval tv;
   tv.tv_sec = TIMEOUT_SECONDS;
   tv.tv_usec = 0;
   setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+
   /* connect to server */
   if (connect(fd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
     perror("error: cannot connect to server");
     close(fd);
     return -1;
   }
+
+  /* SSL Context */
+  state->ssl = SSL_new(state->ssl_ctx);
+  state->ssl_ctx = SSL_CTX_new(TLS_client_method());
+
+  /* set non-blocking*/
+  if (set_nonblock(fd) < 0) return -1;
+
+  SSL_set_fd(state->ssl, fd);
+  if (ssl_block_connect(state->ssl, fd) < 0) return -1;
+
 
   return fd;
 }
@@ -90,9 +103,7 @@ static int client_process_command(struct client_state *state) {
  * @param state   Initialized client state
  * @param msg     Message to handle
  */
-static int execute_request(
-  struct client_state *state,
-  const struct api_msg *msg) {
+static int execute_request(struct client_state *state, const struct api_msg *msg) {
   
   /* TODO handle request and reply to client */
 
@@ -169,7 +180,7 @@ static int handle_incoming(struct client_state *state) {
   /* TODO once you implement encryption you may need to call ssl_has_data
    * here due to buffering (see ssl-nonblock example)
    */
-  if (FD_ISSET(state->api.fd, &readfds)) {
+  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
     r = handle_server_request(state);
     
     return r;
@@ -192,7 +203,8 @@ static int client_state_init(struct client_state *state) {
 static void client_state_free(struct client_state *state) {
 
   /* TODO any additional client state cleanup */
-
+  SSL_free(state->ssl);
+  SSL_CTX_free(state->ssl_ctx);
   /* cleanup API state */
   api_state_free(&state->api);
 

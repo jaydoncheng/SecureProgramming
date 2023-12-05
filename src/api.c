@@ -15,7 +15,7 @@
  * @return        Returns 1 on new message, 0 in case socket was closed,
  *                or -1 in case of error.
  */
-int api_recv(struct api_state *state, struct api_msg *msg) {
+int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg) {
   assert(msg);
   assert(state);
 
@@ -25,19 +25,24 @@ int api_recv(struct api_state *state, struct api_msg *msg) {
 
   ssize_t total = 0; /* also an offset for where to continue writing to */
   ssize_t count = 0;
-  while ((count = recv(state->fd, msg->content + total, msg->cont_buf_len - total, 0)) > 0) {    
+  while ((count = SSL_read(ssl, msg->content + total, msg->cont_buf_len - total)) > 0) { 
+
     if (count < 0) {
       fprintf(stderr, "error: recv failed: %s\n", strerror(errno));
       return -1;
     }
 
     total += count;
-    
+    int r = ssl_block_if_needed(ssl, state->fd, r);
+    if (r < 0) return -1;
+    // if (r == 0) break; /* might have to use this if below line doesn't work */
+
     if (strchr(msg->content, '\n')) break; /* comment this to test timeouts */
     if (msg->cont_buf_len - total == 0) {
       msg->cont_buf_len *= 2;
       msg->content = realloc(msg->content, msg->cont_buf_len * sizeof(char));
     }
+    
   };
  
   if (total == 0) return 0;

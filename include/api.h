@@ -2,6 +2,8 @@
 #define _API_H_
 
 #include <stdlib.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #define DEFAULT_MSG_LEN 128
 
