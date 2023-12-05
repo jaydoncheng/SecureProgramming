@@ -21,8 +21,9 @@
         "cstdlib": "c",
         "string.h": "c",
         "api.h": "c",
-        "client.h": "c"
+        "client.h": "c",
+        "ssl-nonblock.h": "c"
     },
     "cmake.configureOnOpen": false,
-    "C_Cpp.errorSquiggles": "disabled"
+    "C_Cpp.errorSquiggles": "enabled"
 }

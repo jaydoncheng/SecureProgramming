@@ -19,6 +19,9 @@ struct worker_state {
   int server_fd;  /* server <-> worker bidirectional notification channel */
   int server_eof;
   struct client_state client;
+
+  SSL_CTX *ssl_ctx;
+  SSL *ssl;
   /* TODO worker state variables go here */
 };
 
@@ -279,7 +282,7 @@ static int handle_client_request(struct worker_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(state->ssl, &state->api, &msg);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -388,6 +391,9 @@ static int worker_state_init(
   /* set up API state */
   api_state_init(&state->api, connfd);
 
+  state->ssl_ctx = SSL_CTX_new(TLS_server_method());
+  state->ssl = SSL_new(state->ssl_ctx);
+
   /* TODO any additional worker state initialization */
 
   return 0;
@@ -401,7 +407,8 @@ static int worker_state_init(
 static void worker_state_free(
   struct worker_state *state) {
   /* TODO any additional worker state cleanup */
-
+  SSL_free(state->ssl);
+  SSL_CTX_free(state->ssl_ctx);
   /* clean up API state */
   api_state_free(&state->api);
 
@@ -431,6 +438,15 @@ void worker_start(
     goto cleanup;
   }
   /* TODO any additional worker initialization */
+
+  // SSL_use_certificate_file(...)
+  // SSL_use_Private_key_file(...)
+
+  set_nonblock(connfd);
+  SSL_set_fd(state.ssl, connfd);
+  ssl_block_accept(state.ssl, connfd); /* wtf does this do */
+
+
   //send_chat_history(&state);
   /* handle for incoming requests */
   while (!state.eof) {

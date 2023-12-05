@@ -44,9 +44,6 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
-  /* SSL Context */
-  state->ssl = SSL_new(state->ssl_ctx);
-  state->ssl_ctx = SSL_CTX_new(TLS_client_method());
 
   /* set non-blocking*/
   if (set_nonblock(fd) < 0) return -1;
@@ -124,7 +121,7 @@ static int handle_server_request(struct client_state *state) {
   assert(state);
 
   /* wait for incoming request, set eof if there are no more requests */
-  r = api_recv(&state->api, &msg);
+  r = api_recv(state->ssl, &state->api, &msg);
   if (r < 0) return -1;
   if (r == 0) {
     state->eof = 1;
@@ -180,7 +177,7 @@ static int handle_incoming(struct client_state *state) {
   /* TODO once you implement encryption you may need to call ssl_has_data
    * here due to buffering (see ssl-nonblock example)
    */
-  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(ssl)) {
+  if (FD_ISSET(state->api.fd, &readfds) && ssl_has_data(state->ssl)) {
     r = handle_server_request(state);
     
     return r;
@@ -192,6 +189,10 @@ static int client_state_init(struct client_state *state) {
   /* clear state, invalidate file descriptors */
   memset(state, 0, sizeof(*state));
 
+  /* SSL Context */
+  state->ssl = SSL_new(state->ssl_ctx);
+  state->ssl_ctx = SSL_CTX_new(TLS_client_method());
+  
   /* initialize UI */
   ui_state_init(&state->ui);
 

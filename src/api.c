@@ -6,6 +6,7 @@
 
 #include "util.h"
 #include "api.h"
+#include "ssl-nonblock.h"
 
 /**
  * @brief         Receive the next message from the sender and stored in msg.

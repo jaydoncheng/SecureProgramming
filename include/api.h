@@ -19,7 +19,7 @@ struct api_state {
 };
 
 
-int api_recv(struct api_state *state, struct api_msg *msg);
+int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg);
 void api_recv_free(struct api_msg *msg);
 
 void api_state_free(struct api_state *state);

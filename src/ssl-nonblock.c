@@ -7,7 +7,7 @@
  * openssl-examples provided by the course.
  * see header file for explanation of code
 */
-static int ssl_block_if_needed(SSL *ssl, int fd, int r) {
+int ssl_block_if_needed(SSL *ssl, int fd, int r) {
   int err, want_read;
   fd_set readfds, writefds;
 

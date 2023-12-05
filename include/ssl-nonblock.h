@@ -16,7 +16,7 @@
  * - The other functions allow the regular SSL operations to be done in a
  *   blocking way on a non-blocking SSL object, to require minimal code changes.
  */
-
+int ssl_block_if_needed(SSL *ssl, int fd, int r);
 int ssl_block_accept(SSL *ssl, int fd);
 int ssl_block_connect(SSL *ssl, int fd);
 int ssl_block_read(SSL *ssl, int fd, void *buf, int len);
