@@ -27,16 +27,17 @@ int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg) {
   ssize_t total = 0; /* also an offset for where to continue writing to */
   ssize_t count = 0;
   while ((count = SSL_read(ssl, msg->content + total, msg->cont_buf_len - total)) > 0) { 
-
+    printf("or this failed\n");
     if (count < 0) {
       fprintf(stderr, "error: recv failed: %s\n", strerror(errno));
       return -1;
     }
 
     total += count;
-    int r = ssl_block_if_needed(ssl, state->fd, r);
+    int r;
+    r = ssl_block_if_needed(ssl, state->fd, r);
     if (r < 0) return -1;
-    // if (r == 0) break; /* might have to use this if below line doesn't work */
+    if (r == 0) break; /* might have to use this if below line doesn't work */
 
     if (strchr(msg->content, '\n')) break; /* comment this to test timeouts */
     if (msg->cont_buf_len - total == 0) {
@@ -45,7 +46,6 @@ int api_recv(SSL *ssl, struct api_state *state, struct api_msg *msg) {
     }
     
   };
- 
   if (total == 0) return 0;
   return 1;
 }
@@ -77,7 +77,6 @@ int api_send(SSL *ssl, int fd, const void *buf, int len) {
     if (r < 0) return -1;
     if (r == 0) break;
   }
-
   return 0;
 }
 

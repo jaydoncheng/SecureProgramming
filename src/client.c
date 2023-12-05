@@ -44,6 +44,8 @@ static int client_connect(struct client_state *state,
     return -1;
   }
 
+  // SSL_CTX_load_verify_locations(state->ssl_ctx, )
+
 
   /* set non-blocking*/
   if (set_nonblock(fd) < 0) return -1;

@@ -23,6 +23,7 @@ int ssl_block_if_needed(SSL *ssl, int fd, int r) {
   case SSL_ERROR_ZERO_RETURN: return 0;
   case SSL_ERROR_WANT_READ:   want_read = 1; break;
   case SSL_ERROR_WANT_WRITE:  want_read = 0; break;
+  case SSL_ERROR_NONE: return 0;
   default:
     if (err == SSL_ERROR_SYSCALL && !ERR_peek_error()) return 0;
 

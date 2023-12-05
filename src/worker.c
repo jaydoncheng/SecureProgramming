@@ -395,7 +395,8 @@ static int worker_state_init(
   state->ssl = SSL_new(state->ssl_ctx);
 
   /* TODO any additional worker state initialization */
-
+  SSL_use_certificate_file(state->ssl, "./serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
+  SSL_use_PrivateKey_file(state->ssl, "./serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
   return 0;
 }
 
@@ -439,13 +440,10 @@ void worker_start(
   }
   /* TODO any additional worker initialization */
 
-  SSL_use_certificate_file(state.ssl, "./serverkeys/server-ca-cert.pem", SSL_FILETYPE_PEM);
-  SSL_use_PrivateKey_file(state.ssl, "./serverkeys/privkey-server.pem", SSL_FILETYPE_PEM);
 
   set_nonblock(connfd);
   SSL_set_fd(state.ssl, connfd);
   ssl_block_accept(state.ssl, connfd); /* wtf does this do */
-
 
   //send_chat_history(&state);
   /* handle for incoming requests */
