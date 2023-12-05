@@ -203,6 +203,18 @@ missing_args:
 missing_args_login:
       send(state->api.fd, cmd_args, strlen(cmd_args), 0);
 
+    } else if(strcmp(t, "/users") == 0) {
+      char cmd_args[] = "error: invalid command format\n";
+      if(state->client.isLoggedIn != 1) {
+        send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
+        goto cleanup;
+      }
+      if ((t = strtok(NULL, delim)) != NULL) {
+        send(state->api.fd, cmd_args, strlen(cmd_args), 0);
+        goto cleanup;
+      }
+      print_users(state->api.fd);
+      notify_workers(state);
     } else {
       printf("String started with /\n");
       char cmd_msg[64];
@@ -244,6 +256,7 @@ cleanup:
 
     if(handle_prv_msg(state->client.username, username, messageContent) == 0) {
       send(state->api.fd, cmd_success, strlen(cmd_success), 0);
+      notify_workers(state);
     }
     else send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
 

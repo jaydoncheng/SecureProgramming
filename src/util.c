@@ -105,3 +105,18 @@ void generate_hash(const char *password, const unsigned char *salt, unsigned cha
 
     EVP_MD_CTX_free(mdctx);
 }
+
+char* appendHyphenAndNewline(const char* input) {
+    char* result = (char*)malloc(strlen(input) + 3); 
+
+    if (result == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(result, "-");
+    strcat(result, input);
+    strcat(result, "\n");
+
+    return result;
+}

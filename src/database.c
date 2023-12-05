@@ -238,3 +238,51 @@ int handle_prv_msg(char username[32], char rcv_username[32], char messageContent
   else return 1;
   return 0;
 }
+
+int print_users(int api_fd) {
+    
+  sqlite3 *db;
+  char *msg;
+  char username[32];
+  sqlite3_stmt *stmt = NULL;
+  int error = 0;
+
+  fd_set writefds;
+  FD_ZERO(&writefds);
+  FD_SET(api_fd, &writefds);
+  int fdmax = api_fd;
+
+  if(sqlite3_open(DB_FILE, &db) != SQLITE_OK) {
+    fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
+    return -1;
+  }
+
+  char *query = "SELECT username FROM users";
+
+  prepare_statement(db, query, &stmt);
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+
+    msg = calloc(sizeof(username), sizeof(char));
+    strncpy(msg, (const char*)sqlite3_column_text(stmt, 0), sizeof(username));
+    char* modifiedMsg = appendHyphenAndNewline(msg);
+
+    int r = select(fdmax+1, NULL, &writefds, NULL, NULL);
+    if (r < 0) {
+      perror("dude im sot ired");
+      free(msg);
+      free(modifiedMsg);
+      return -1;
+    }
+    if (FD_ISSET(api_fd, &writefds)) {
+      r = send(api_fd, modifiedMsg, strlen(modifiedMsg), 0);
+      free(msg);
+      free(modifiedMsg);
+    }
+    
+  }
+
+  sqlite3_finalize(stmt);
+  sqlite3_close(db);
+  return error;
+}
