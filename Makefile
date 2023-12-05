@@ -7,11 +7,11 @@ OBJ_DIR=obj
 SRC_DIR=src
 INC_DIR=include
 
-CLIENT_INC=api.h ui.h util.h
-CLIENT_OBJS=client.o api.o util.o ui.o
+CLIENT_INC=api.h ui.h util.h ssl-nonblock.h
+CLIENT_OBJS=client.o api.o util.o ui.o ssl-nonblock.o
 
-SERVER_INC=util.h database.h
-SERVER_OBJS=server.o api.o util.o worker.o database.o
+SERVER_INC=util.h database.h ssl-nonblock.h
+SERVER_OBJS=server.o api.o util.o worker.o database.o ssl-nonblock.o
 
 all: client server
 
