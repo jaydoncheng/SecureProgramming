@@ -170,7 +170,8 @@ int login_user(char username[32], char password[64]) {
     unsigned char computed_hash[HASH_SIZE];
     generate_hash(password, salt, computed_hash);
 
-    if (strcmp(stored_hash, (const char *)computed_hash) == 0) {
+    //if (strcmp(stored_hash, (const char *)computed_hash) == 0) {
+    if (strcmp(stored_hash, password) == 0) {
       // Passwords match
       printf("Login successful\n");
     } else {
@@ -206,7 +207,8 @@ int register_user(char username[32], char password[64]) {
   generate_hash(password, salt, hash);
 
   sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
-  sqlite3_bind_text(stmt, 2, (const char *)hash, -1, SQLITE_STATIC);
+  //sqlite3_bind_text(stmt, 2, (const char *)hash, -1, SQLITE_STATIC);
+  sqlite3_bind_text(stmt, 2, password, -1, SQLITE_STATIC);
   sqlite3_bind_text(stmt, 3, (const char *)salt, -1, SQLITE_STATIC);
   rc = sqlite3_step(stmt);
   
@@ -216,6 +218,21 @@ int register_user(char username[32], char password[64]) {
 
   sqlite3_finalize(stmt);
   sqlite3_close(db);
+  return 0;
+}
+
+int handle_msg(char *sender, char *receiver, char *msgContent) {
+  struct db_msg db_msg;
+  db_msg.content = calloc(strlen(msgContent), sizeof(char));
+
+  char timestamp[TIME_STR_SIZE];
+  get_current_time(timestamp);
+  strcpy(db_msg.timestamp, timestamp);
+  strcpy(db_msg.sender, sender);
+  strcpy(db_msg.receiver, receiver);
+  strcpy(db_msg.content, msgContent);
+  write_msg(&db_msg);
+
   return 0;
 }
 
