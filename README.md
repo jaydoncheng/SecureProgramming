@@ -50,11 +50,19 @@ read_latest_msg: Retrieve the latest message from the database.
 write_msg: Write a new message to the database.
 print_users: Display the list of registered users.
 
+
 ## Security Design
+### Trusted Third Party
+The trusted third party is invoked through the ttp.py script in the Makefile. The client can request a certificate from the TTP to use during communication with the server (unimplemented). The TTP takes as argument the private key supplied by either the server or client when creating a certificate. The CSR is stored on the TTP.
+
+**Commands**:
+`python3 create_ca <ttpdir>`
+`python3 create_server_cert <privkey>`
+
 ### Messages between client and server
 * Authentication messages
     * The client and server use a TLS handshake to establish a secure connection. The client sends a request to the server with a client random, which the server replies to with its SSL certificate and its server random.
-    * After confirming the certificate, the client and server generate the premaster secret separately (using the Diffie-Hellman algorithm) and calculate the session keys using the premaster secret.
+    * After confirming the certificate, the client and server use their public and private keys to encode private messages.
 * Command request/reply from client <-> server
     * Every command request and reply uses the session keys obtained from authentication to securely transmit data.
 
