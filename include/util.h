@@ -3,6 +3,8 @@
 
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 
@@ -14,6 +16,8 @@ void generate_hash(const char *password, const unsigned char *salt, unsigned cha
 
 int get_current_time(char *buf);
 char* appendHyphenAndNewline(const char* input);
+char* removeLeadingWhitespace(const char *input);
+char* getMessageAfterUser(const char *input, const char *user);
 #define TIME_STR_SIZE 20
 
 #define SALT_SIZE 16

@@ -130,11 +130,13 @@ static int execute_request(struct worker_state *state, const struct api_msg *api
   buf[l] = '\n';
   buf[l+1] = '\0';
   if (strlen(buf) == 1) return 0;
+
+  char *newBuf = removeLeadingWhitespace(buf);
   
-  if (buf[0] == '/') {
+  if (newBuf[0] == '/') {
     const char delim[] = " \n\t";
-    char *copy = calloc(strlen(buf), sizeof(char));
-    strcpy(copy, buf);
+    char *copy = calloc(strlen(newBuf), sizeof(char));
+    strcpy(copy, newBuf);
     char *t = strtok(copy, delim);
     
     if (strcmp(t, "/register") == 0) {
@@ -228,15 +230,16 @@ cleanup:
   if(state->client.isLoggedIn != 1) {
     send(state->api.fd, cmd_fail_log, strlen(cmd_fail_log), 0);
     free(buf);
+    free(newBuf);
     return 0;
   }
 
-  if(buf[0] == '@') {
+  if(newBuf[0] == '@') {
     char cmd_fail_rcv[] = "error: user not found\n";
 
     const char delim[] = " \n\t";
-    char *copy = calloc(strlen(buf), sizeof(char));
-    strcpy(copy, buf);
+    char *copy = calloc(strlen(newBuf), sizeof(char));
+    strcpy(copy, newBuf);
     char *username = NULL;
 
     char *t = strtok(copy, delim);
@@ -244,25 +247,30 @@ cleanup:
     username = strdup(t + 1);
 
     printf("Username: %s\n", username);
-    printf("Message content: %s\n", buf);
+    printf("Message content: %s\n", newBuf);
 
     sqlite3 *db = NULL;
     if (open_db(&db) != 0) {
       return -1;
     }
     if(user_exists(db, username)) {
-      handle_msg(state->client.username, username, buf);
+      char *msg = getMessageAfterUser(newBuf, username);
+      char *finalMsg = malloc(strlen(username) + strlen(msg) + 2);
+      sprintf(finalMsg, "@%s %s",username, msg);
+      handle_msg(state->client.username, username, finalMsg);
+      free(msg);
+      free(finalMsg);
       notify_workers(state);
     } else {
       send(state->api.fd, cmd_fail_rcv, strlen(cmd_fail_rcv), 0);
     }
     free(copy);
   } else {
-    handle_msg(state->client.username, "Null", buf);
+    handle_msg(state->client.username, "Null", newBuf);
     notify_workers(state);
   }
 
-
+  free(newBuf);
   free(buf);
   return 0; // <-- wtf does this have to be
             // turns out it has to be zero lol TODO: document return codes of functions

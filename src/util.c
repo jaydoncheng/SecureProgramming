@@ -120,3 +120,26 @@ char* appendHyphenAndNewline(const char* input) {
 
     return result;
 }
+
+char* removeLeadingWhitespace(const char *input) {
+    const char *start = input;
+    while (isspace(*start)) {
+        start++;
+    }
+
+    size_t length = strlen(start);
+
+    char *result = malloc(length + 1); 
+
+    strcpy(result, start);
+
+    return result;
+}
+
+char* getMessageAfterUser(const char *input, const char *user) {
+    const char *userPosition = strstr(input, user);
+    if (userPosition == NULL) return NULL;
+    userPosition += strlen(user);
+    
+    return removeLeadingWhitespace(userPosition);
+}
