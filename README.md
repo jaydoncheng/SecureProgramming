@@ -110,26 +110,25 @@ In essence, our design not only prioritizes the confidentiality, authentication,
 ## Cryptography
 **Password hashing:**
 1. Database Storage
-Data Stored: In the database (chat.db), user information is stored in the 'users' table, which includes the fields:
-id: User ID
-username: User's chosen username
-password: Hashed password
-salt: Salt used in the hashing process
+
+* Data Stored: In the database (chat.db), user information is stored in the 'users' table, which includes a field for hashed password and associated salt.
+
 2. User Registration (register_user() in database.c)
-Function Invocation: When a user registers, the register_user() function in 'database.c' is called.
+   
+* Function Invocation: When a user registers, the register_user() function in 'database.c' is called.
 
-Generate Salt: The first step is to generate a random salt. The generate_salt() function is invoked for this purpose, creating a unique random string.
+* Generate Salt: The first step is to generate a random salt. The generate_salt() function is invoked for this purpose, creating a unique random string.
 
-Hash Generation: The generated salt, along with the user's chosen password, is passed to the generate_hash() function. This function applies cryptographic functions to create a hashed password. The hashed password, along with the username and salt, is then stored in the database.
+* Hash Generation: The generated salt, along with the user's chosen password, is passed to the generate_hash() function. This function applies cryptographic functions to create a hashed password. The hashed password, along with the username and salt, is then stored in the database.
 
 3. User Login (login_user() in database.c)
 Function Invocation: When a user attempts to log in, the login_user() function in 'database.c' is called.
 
-Retrieve Salt: The salt associated with the user is retrieved from the database based on the provided username.
+* Retrieve Salt: The salt associated with the user is retrieved from the database based on the provided username.
 
-Hash Generation: The generate_hash() function is again invoked, using the retrieved salt and the password entered during login. This process generates a hash from the entered password.
+* Hash Generation: The generate_hash() function is again invoked, using the retrieved salt and the password entered during login. This process generates a hash from the entered password.
 
-Comparison: The generated hash is compared with the stored hash in the database. If the two hashes match, the user is authorized, indicating a successful login. This comparison ensures that the user has entered the correct password without exposing the actual password or salt.
+* Comparison: The generated hash is compared with the stored hash in the database. If the two hashes match, the user is authorized, indicating a successful login. This comparison ensures that the user has entered the correct password without exposing the actual password or salt.
 
 4. Confidentiality Measures
 Protection in Database Leak Scenario: In the unfortunate event of a database leak, the confidentiality of users' passwords remains intact. The leaked information would consist of hashed passwords and associated salts, making it computationally challenging for an attacker to decipher the original passwords.
